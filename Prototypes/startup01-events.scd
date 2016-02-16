@@ -275,7 +275,7 @@ setArgs: {
 	var	args, soloargs, polyargs, lib, desc;
 	((lib = SynthDescLib.all[~lib ? \global]).notNil
 		and: { (desc = lib[~instrument.asSymbol]).notNil }).if({
-		~hasGate = desc.hasGate;
+		~hasGate ?? { ~hasGate = desc.hasGate };
 		~msgFunc = desc.msgFunc;
 		}, {
 			~msgFunc = {
@@ -539,7 +539,14 @@ prepNote: #{
 		~length = ~length * currentEnvironment.delta / ~dur;
 	};
 
-	~args = ~args ?? { [~note.tryPerform(\args)].tryPerform(\flatten, 1) } ?? { [] };
+	if(~args.isNil) {
+		~args = ~note.tryPerform(\args);
+		if(~args.isNil) {
+			~args = [];
+		} {
+			~args = ~args.flatten(1);
+		};
+	};
 	i = 0;	// args should be key value pairs, but might be an array of velocities
 	// drop pairs that are not \symbol, value
 	{ i < ~args.size }.while({
@@ -635,7 +642,7 @@ ProtoEvent(\voicerNote).v.copy.putAll((
 			synthLib = ~synthLib ?? { SynthDescLib.global };
 			~desc = synthLib.synthDescs[~instrument];
 			if (~desc.notNil) {
-				~hasGate = ~desc.hasGate;
+				~hasGate ?? { ~hasGate = ~desc.hasGate };
 				~msgFunc = ~desc.msgFunc;
 			}{
 				~hasGate = ~hasGate ? true;
