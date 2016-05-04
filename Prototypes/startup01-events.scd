@@ -541,7 +541,7 @@ prepNote: #{
 
 	if(~args.isNil) {
 		~args = ~note.tryPerform(\args);
-		if(~args.isNil) {
+		if(~args.isNil or: { ~args.isNumber }) {
 			~args = [];
 		} {
 			~args = ~args.flatten(1);
