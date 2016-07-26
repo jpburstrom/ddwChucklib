@@ -1,6 +1,6 @@
 TITLE:: BP
 summary:: A "bound process" (process prototype bound to musical data)
-categories:: ChuckLib/Objects
+categories:: Libraries>ChuckLib>Objects
 related:: Classes/PR
 
 DESCRIPTION::
