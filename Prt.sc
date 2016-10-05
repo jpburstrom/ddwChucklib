@@ -39,15 +39,3 @@ BPStream : Pattern {
 	storeArgs { ^[key, resetSource] }
 //	storeOn { |stream| this.printOn(stream) }
 }
-
-// Proutine, but protects against nil being passed in
-// intended for routines that yield events
-// this is a workaround for EventStreamPlayer-stop
-// no longer needed b/c of EventStreamCleanup - deprecating
-Prt : Proutine {
-	var	<>envir;
-	*new { arg routineFunc;
-		"Prt is deprecated. Use Prout instead.".postln
-		^Prout(routineFunc)
-	}
-}
