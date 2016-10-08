@@ -63,7 +63,7 @@ Library.at(\mixer, \smallskin).isNil.if({
 			});
 			count = count + 1;
 			VP(i).v.maxControlProxies = VP(i).v.controlProxies.size;
-			VP(i).v.smallGui(~voicerFlow, nil, nil, nil, false);
+			VP(i).v.smallGui(~voicerFlow, nil, nil, nil, nil, false);
 			0.2.wait;
 			~advanceStatus.();
 			(i+1 % ~voicerColumns == 0).if({ ~voicerFlow.startRow; });
