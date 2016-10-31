@@ -9,15 +9,15 @@ ChuckBrowserKeyController {
 		<string, routine,
 		<lastMTIndex,
 		<registers;
-	
+
 	*initClass {
 		identifierCodes = (65..90) ++ (97..122) ++ (48..57) ++ $_.ascii ++ 127;
 
 		states = Dictionary[
 				// matchItem is done on unicode value from keystroke
 				// arrow keys, pass to default action of the view who has focus now
-			(63232..63235) -> { |instance, view, char, modifiers, unicode, keycode|
-				view.defaultKeyDownAction(char, modifiers, unicode);
+			(65361..65364) -> { |instance, view, char, modifiers, unicode, keycode, key|
+				view.defaultKeyDownAction(char, modifiers, unicode, keycode, key);
 				nil	// means reset
 			},
 				// A-Z, browse for a class
@@ -176,7 +176,7 @@ ChuckBrowserKeyController {
 				});
 				nil
 			},
-						
+
 				// /, enter an arbitrary call to apply to current object
 				// e.g. F.b/.makev or F.b/.v.insp
 			47 -> { |instance, view, char, modifiers, unicode, keycode|
@@ -226,7 +226,7 @@ ChuckBrowserKeyController {
 				nil
 			}
 		];
-		
+
 		wildcards = Dictionary[
 				// current object for this class
 			"(*)" -> { |string, identifier, pos, instance|
@@ -257,57 +257,52 @@ ChuckBrowserKeyController {
 			}
 		];
 	}
-	
+
 	*new { |browser|
 		^super.newCopyArgs(browser).init
 	}
-	
+
 	init {
-		var	fn = { |view, char, modifiers, unicode, keycode|
-			if(view.isKindOfByName('QView')) {
-				if(keycode.inclusivelyBetween(16777234, 16777237).not) {
-					this.doKey(view, char, modifiers, unicode, keycode);
-					true  // required for QT
-				} {
-					nil  // arrows must bubble up to focused view
-				};
+		var	fn = { |view, char, modifiers, unicode, keycode, key|
+			if(key.inclusivelyBetween(16777234, 16777237).not) {
+				this.doKey(view, char, modifiers, unicode, keycode, key);
+				true  // required for QT
 			} {
-				this.doKey(view, char, modifiers, unicode, keycode);
-				true
+				nil  // arrows must bubble up to focused view
 			};
 		};
 		browser.classMenu.keyDownAction = fn;
 		browser.subTypeMenu.keyDownAction = fn;
 		browser.instanceListView.keyDownAction = fn;
 		browser.keyCommandView.keyDownAction = fn;
-		
+
 		registers = IdentityDictionary.new;
-		
+
 		this.resetState(true);
 	}
-	
+
 	focus { browser.focus }
 
-	doKey { |view, char, modifiers, unicode, keycode|
+	doKey { |view, char, modifiers, unicode, keycode, key|
 		routine ?? { this.resetState };
 		if(char.tryPerform(\isPrint) ? false) { string = string ++ char };
 		if(#[8, 127].includes(unicode)) {
 			string = string.left(string.size-1);
 		};
 		this.updateString;
-		routine.next([view, char, modifiers, unicode, keycode, currentEnvironment]);
+		routine.next([view, char, modifiers, unicode, keycode, key, currentEnvironment]);
 	}
-	
+
 	resetState { |newRoutine = false|
 		string = "";
 		this.updateString;
 		(newRoutine or: { routine.isNil }).if({
 			routine = Routine({ |keyspec|
-				var	view, char, modifiers, unicode, keycode, newkeyspec, action,
+				var	view, char, modifiers, unicode, keycode, key, newkeyspec, action,
 					envir;
 				loop {
-					#view, char, modifiers, unicode, keycode, envir = keyspec;
-					(action = states.matchAt(unicode)).notNil.if({
+					#view, char, modifiers, unicode, keycode, key, envir = keyspec;
+					(action = states.matchAt(if(unicode == 0) { keycode } { unicode })).notNil.if({
 							// if an error occurs, it might crash the routine
 							// and kill the interface
 						try {
@@ -335,14 +330,14 @@ ChuckBrowserKeyController {
 			});
 		});
 	}
-	
+
 	parseIdentifier { |firstChar, action|
 		var	string;
 		var	view, char, modifiers, unicode, keycode, envir;
 
 		string = firstChar.notNil.if({ firstChar.asString }, { "" });
 		action.value(string);
-		
+
 		{	#view, char, modifiers, unicode, keycode, envir = this.getKeySpec;
 			identifierCodes.matchItem(unicode)
 		}.while({
@@ -360,7 +355,7 @@ ChuckBrowserKeyController {
 		});
 		^[string, [view, char, modifiers, unicode, keycode, envir]]
 	}
-	
+
 	parseNumber { |firstChar, action|
 		var	string;
 		var	view, char, modifiers, unicode, keycode, envir;
@@ -368,7 +363,7 @@ ChuckBrowserKeyController {
 		browser.keyCommandView.focus;
 		string = firstChar.notNil.if({ firstChar.asString }, { "" });
 		action.value(string);
-		
+
 		{	#view, char, modifiers, unicode, keycode, envir = this.getKeySpec;
 			unicode.inclusivelyBetween(48, 57) or: { unicode == 127 }
 		}.while({
@@ -387,7 +382,7 @@ ChuckBrowserKeyController {
 		^[(string.size > 0).if({ string.asInteger }),
 			[view, char, modifiers, unicode, keycode, envir]]
 	}
-	
+
 	getCmdString { |firstChar|	// just collecting chars, no action
 		var	string;
 		var	view, char, modifiers, unicode, keycode, envir;
@@ -408,7 +403,7 @@ ChuckBrowserKeyController {
 		^[this.processWildcards(string), [view, char, modifiers, unicode, keycode, envir]]
 
 	}
-	
+
 	processWildcards { |string|
 		var	index, idpos;
 		string = string.copy;
@@ -429,7 +424,7 @@ ChuckBrowserKeyController {
 		});
 		^string
 	}
-	
+
 	updateString {
 		this.browser.keyCommandView.string = string;
 	}
