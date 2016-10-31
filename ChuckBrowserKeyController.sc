@@ -315,7 +315,7 @@ ChuckBrowserKeyController {
 							this.resetState(true);
 						};
 						newkeyspec.notNil.if({
-							#view, char, modifiers, unicode, keycode, envir = newkeyspec
+							#view, char, modifiers, unicode, keycode, key, envir = newkeyspec
 						});
 					}, { newkeyspec = nil });
 						// if the action didn't return a keyspec,
@@ -333,12 +333,12 @@ ChuckBrowserKeyController {
 
 	parseIdentifier { |firstChar, action|
 		var	string;
-		var	view, char, modifiers, unicode, keycode, envir;
+		var	view, char, modifiers, unicode, keycode, key, envir;
 
 		string = firstChar.notNil.if({ firstChar.asString }, { "" });
 		action.value(string);
 
-		{	#view, char, modifiers, unicode, keycode, envir = this.getKeySpec;
+		{	#view, char, modifiers, unicode, keycode, key, envir = this.getKeySpec;
 			identifierCodes.matchItem(unicode)
 		}.while({
 			(#[127, 8].includes(unicode)).if({
@@ -353,18 +353,18 @@ ChuckBrowserKeyController {
 				});
 			});
 		});
-		^[string, [view, char, modifiers, unicode, keycode, envir]]
+		^[string, [view, char, modifiers, unicode, keycode, key, envir]]
 	}
 
 	parseNumber { |firstChar, action|
 		var	string;
-		var	view, char, modifiers, unicode, keycode, envir;
+		var	view, char, modifiers, unicode, keycode, key, envir;
 
 		browser.keyCommandView.focus;
 		string = firstChar.notNil.if({ firstChar.asString }, { "" });
 		action.value(string);
 
-		{	#view, char, modifiers, unicode, keycode, envir = this.getKeySpec;
+		{	#view, char, modifiers, unicode, keycode, key, envir = this.getKeySpec;
 			unicode.inclusivelyBetween(48, 57) or: { unicode == 127 }
 		}.while({
 			(#[127, 8].includes(unicode)).if({
@@ -380,17 +380,17 @@ ChuckBrowserKeyController {
 			});
 		});
 		^[(string.size > 0).if({ string.asInteger }),
-			[view, char, modifiers, unicode, keycode, envir]]
+			[view, char, modifiers, unicode, keycode, key, envir]]
 	}
 
 	getCmdString { |firstChar|	// just collecting chars, no action
 		var	string;
-		var	view, char, modifiers, unicode, keycode, envir;
+		var	view, char, modifiers, unicode, keycode, key, envir;
 
 		browser.keyCommandView.focus;
 		string = firstChar.notNil.if({ firstChar.asString }, { "" });
 
-		{	#view, char, modifiers, unicode, keycode, envir = this.getKeySpec;
+		{	#view, char, modifiers, unicode, keycode, key, envir = this.getKeySpec;
 			unicode != 13 and: { unicode != 27 }	// esc to cancel
 		}.while({
 			(#[127, 8].includes(unicode)).if({
@@ -400,7 +400,7 @@ ChuckBrowserKeyController {
 				string = string ++ char;
 			});
 		});
-		^[this.processWildcards(string), [view, char, modifiers, unicode, keycode, envir]]
+		^[this.processWildcards(string), [view, char, modifiers, unicode, keycode, key, envir]]
 
 	}
 
