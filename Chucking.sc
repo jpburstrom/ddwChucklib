@@ -1812,10 +1812,25 @@ MCG : AbstractChuckArray {
 	}
 
 	bindBP { |bp, adverb|
+		var mixer;
 		adverb ?? { adverb = \chan };
-		(bp.exists and: { bp.v[adverb].notNil }).if({
-			try { value.mixer_(bp.v[adverb]) }
-				{ "Error during MCG-bindBP.".postln }
+		(bp.exists and: { bp.v[adverb].isMixerChannel }).if({
+			try {
+				mixer = value.mixer;
+				value.mixer_(bp.v[adverb]);
+			} { |error|
+				error.reportError;
+				"^^ Error during MCG-bindBP.".postln;
+				// on error, revert to previous object
+				// in theory this should not happen
+				// but a bad object in a mixer slot can break mixingboard updates
+				// so, be safe about it
+				value.mixer_(mixer);
+			}
+		}, {
+			"BP(%).% is %, not a MixerChannel".format(
+				bp.collIndex.asCompileString, adverb, bp.v[\adverb]
+			).warn
 		});
 	}
 
