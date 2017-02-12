@@ -804,11 +804,27 @@ ProtoEvent(\melWrap).v.copy.make({
 ProtoEvent(\melWrap).v.copy.make({
 	// should only be called inside the event
 	~wrapPattern = #{ |pattern|
-		(~length != inf).if({
-			pattern = Pfindur(~length-0.01, pattern);
-			}, {
-				pattern
-		});
+		var dur;
+		if(~length != inf) {
+			dur = ~length - 0.01;
+			Prout { |inval|
+				var stream = pattern.asStream,
+				cleanup = EventStreamCleanup.new,
+				next, now = 0;
+				block { |break|
+					while { (dur - now) > 0.001 } {
+						next = stream.next(inval);
+						if(next.isNil) { break.() };
+						now = now + next.delta;
+						cleanup.update(next);
+						inval = next.yield;
+					};
+				};
+				cleanup.exit(inval);
+			};
+		} {
+			pattern
+		};
 	};
 
 	~getChord = true;	// default; midi input may override -- used??
