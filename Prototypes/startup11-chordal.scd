@@ -427,6 +427,7 @@ PR(\basicMacroRh).v.clone({
 	~mode_ = #{ |mode|
 		mode = mode.tryPerform(\collIndex) ? mode ? \default;  // pass a symbol in as the mode
 		~child !? { ~child.mode = mode };
+		if(~topNote.isKindOf(Proto)) { ~topNote.mode = mode };
 		currentEnvironment.put(\mode, mode);
 	};
 
