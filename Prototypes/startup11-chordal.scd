@@ -174,9 +174,11 @@ PR(\abstractProcess).v.clone({
 	};
 
 	~updateNoteStream = #{ |inEvent, bassID|
-		bassID !? { inEvent.put(\bassID, bassID) };
-		~noteStream = (~notePattern = ~currentChord.asPattern(inEvent, ~fitFunc.value(~currentChord)))
+		if(inEvent.isRest.not) {
+			bassID !? { inEvent.put(\bassID, bassID) };
+			~noteStream = (~notePattern = ~currentChord.asPattern(inEvent, ~fitFunc.value(~currentChord)))
 			.asStream;
+		};
 	};
 
 	~updateBass = #{ |lastEvent, bassID|
