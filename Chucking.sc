@@ -1860,6 +1860,7 @@ Mode : AbstractChuckNewDict {
 	}
 
 	asMode { ^this }
+	bindMode { |mode| this.bindModalSpec(mode.value) }
 
 		// delegation to referenced object
 	doesNotUnderstand { |selector ... args|
