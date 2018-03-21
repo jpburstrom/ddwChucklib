@@ -1663,6 +1663,24 @@ BP : AbstractChuckNewDict {
 		};
 	}
 
+	asMixer { |key(\chan)|  // 'key' is for adverb support: BP(\name) =>.key MCG(0)
+		var mixer;
+		if(this.exists) {
+			if(value[key].isMixerChannel) { ^value[key] };
+			// try default mixer key
+			if(key != \chan and: { value[\chan].isMixerChannel }) { ^value[\chan] };
+			// try voicer
+			if(value[\event][\voicer].notNil) {
+				mixer = value[\event][\voicer].bus.asMixer;
+				if(mixer.notNil) { ^mixer };
+			};
+			Error("Could not find a MixerChannel for BP(%)".format(collIndex.asCompileString)).throw;
+		};
+		Error(
+			"BP(%) does not exist; can't find MixerChannel for it".format(collIndex.asCompileString)
+		).throw;
+	}
+
 		// for BP, using a pseudomethod not defined in the Proto
 		// should throw an error
 	doesNotUnderstand { |selector ... args|
@@ -1812,12 +1830,11 @@ MCG : AbstractChuckArray {
 	}
 
 	bindBP { |bp, adverb|
-		var mixer;
-		adverb ?? { adverb = \chan };
-		(bp.exists and: { bp.v[adverb].isMixerChannel }).if({
+		var old, mixer = bp.asMixer(adverb);
+		if(mixer.isMixerChannel) {
 			try {
-				mixer = value.mixer;
-				value.mixer_(bp.v[adverb]);
+				old = value.mixer;
+				value.mixer_(mixer);
 			} { |error|
 				error.reportError;
 				"^^ Error during MCG-bindBP.".postln;
@@ -1825,13 +1842,13 @@ MCG : AbstractChuckArray {
 				// in theory this should not happen
 				// but a bad object in a mixer slot can break mixingboard updates
 				// so, be safe about it
-				value.mixer_(mixer);
+				value.mixer_(old);
 			}
-		}, {
+		} {
 			"BP(%).% is %, not a MixerChannel".format(
 				bp.collIndex.asCompileString, adverb, bp.v[\adverb]
 			).warn
-		});
+		};
 	}
 
 	bindVP { |vp|
