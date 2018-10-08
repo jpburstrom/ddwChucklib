@@ -1082,7 +1082,13 @@ BP : AbstractChuckNewDict {
 		// must not do this while playing
 	clock_ { |cl|
 		this.isPlaying.not.if({		// also handles situation of empty bp
-			value.put(\clock, cl);
+			// quite ugly hack: I can't directly override clock_
+			// because we have Object:clock_ :-\
+			if(value['clock_'].isFunction) {
+				value.perform('clock_', cl);
+			} {
+				value[\clock] = cl;
+			};
 		}, {
 			Error("Cannot change the clock while playing.").throw;
 		});
