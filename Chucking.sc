@@ -1253,8 +1253,26 @@ BP : AbstractChuckNewDict {
 		}, { ^nil });
 	}
 	leadTime_ { |lat|
+		this.setLeadTime(lat)
+	}
+	setLeadTime { |lat, q|
+		var diff, clock, time;
 		this.isPlaying.if({
-			"Cannot set leadTime while BP(%) is playing.".format(collIndex).warn;
+			// "Cannot set leadTime while BP(%) is playing.".format(collIndex).warn;
+			diff = lat - leadTime;  // new - old; if raising leadTime, this is positive
+			// quantize to barline
+			clock = this.clock;
+			time = this.eventSchedTime(this.quant(q)) - diff - 0.01;
+			if(time >= clock.beats) {
+				clock.schedAbs(time, {
+					leadTime = lat;
+					this.populateAdhocVariables;
+					this.replay(value[\eventStreamPlayer], value, diff);
+				});
+			} {
+				"BP(%): leadTime not set (too late to reschedule this barline)"
+				.format(collIndex.asCompileString).warn;
+			};
 		}, {
 			leadTime = lat;
 			this.populateAdhocVariables;
@@ -1557,7 +1575,7 @@ BP : AbstractChuckNewDict {
 		value = process;
 	}
 
-	replay { |oldEventStreamPlayer, oldAdhoc|	// process must be playing
+	replay { |oldEventStreamPlayer, oldAdhoc, leadTimeDiff = 0|	// process must be playing
 		var	nextTime, updater;
 		(oldEventStreamPlayer.isPlaying and: { oldEventStreamPlayer.nextBeat.notNil }).if({
 			nextTime = oldEventStreamPlayer.nextBeat;
@@ -1573,7 +1591,7 @@ BP : AbstractChuckNewDict {
 			oldEventStreamPlayer.stop;
 			value[\isPlaying] = true;
 				// make a new one and schedule it for the next event time
-			this.asEventStreamPlayer.play(value[\clock], false, AbsoluteTimeSpec(nextTime));
+			this.asEventStreamPlayer.play(value[\clock], false, AbsoluteTimeSpec(nextTime - leadTimeDiff));
 		});
 	}
 

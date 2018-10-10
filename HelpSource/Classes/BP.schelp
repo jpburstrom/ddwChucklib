@@ -67,7 +67,7 @@ list::
 ## link::Classes/Proto::
 ::
 
-These prepare the BP to receive data. 
+These prepare the BP to receive data.
 
 If the BP already holds a process, chucking another BP, PR or link::Classes/Proto:: will wrap the current process inside the new one, based on the adverb:
 
@@ -312,6 +312,56 @@ ARGUMENT:: lat
 How early to schedule?
 
 returns:: The current leadTime (number).
+
+discussion::
+2018-10-11: Previously, code::leadTime:: could be set only when the process was stopped. As of now, you can set it at any time. If the process is playing, the new code::leadTime:: will take effect at the next barline (defined by the process's link::Classes/BP#-quant::). Use link::Classes/BP#-setLeadTime:: to override the barline.
+
+Changing code::leadTime:: while playing requires the stream to be reset -- use caution. However, in some live coding contexts, it may be impossible to determine all leadTimes in advance, and necessary to change them on the fly.
+
+code::
+(
+BP(\x).free;
+
+Proto {
+	~asPattern = {
+		Pbind(
+			\dur, 1,
+			\count, Pseries(0, 1, inf).trace(prefix: "counter: "),
+			\dummy, Pfunc { thisThread.beats.debug("beats") }
+		)
+	}
+} => BP(\x);
+)
+
+BP(\x).play;
+
+counter: 0
+beats: 456.0
+counter: 1
+beats: 457.0
+
+BP(\x).leadTime = 0.05;
+
+counter: 2     // not the barline yet; no change
+beats: 458.0
+counter: 3
+beats: 459.0
+counter: 0     // barline: note that the counter is reset
+beats: 459.95  // new leadTime
+counter: 1
+beats: 460.95
+
+BP(\x).stop;
+::
+
+METHOD:: setLeadTime
+Set the code::leadTime:: at some arbitrary code::quant:: timepoint. See link::Classes/BP#-leadTime:: for details. (The only difference in this method is the additional quantize argument.)
+
+ARGUMENT:: lat
+How early to schedule?
+
+ARGUMENT:: q
+A code::quant:: parameter specifying when to update the leadTime. This should be in the future.
 
 
 METHOD:: nextBeat
