@@ -1361,7 +1361,20 @@ BP : AbstractChuckNewDict {
 		this.exists.if({
 			stream = value.use({
 					// by entering the environment for asStream, PR/BP code can be simpler
-				this.asPattern.asStream;
+				Pprotect(this.asPattern, { |error, routine|
+					// I might remove this condition later.
+					// It's theoretically possible that an error might occur
+					// in a stream that has already been replaced
+					// by rescheduling or re-wrapping.
+					// If the error occurred in a stream that is not currently active,
+					// then we don't have to stop anything (just let the old stream die).
+					if(routine === value[\eventStream]) {
+						defer {
+							this.stopNow;  // set the BP's state
+							this.reset;    // and, clear the error condition for next time
+						};
+					};
+				}).asStream;
 			});
 			value.put(\eventStream, stream);
 			^stream
