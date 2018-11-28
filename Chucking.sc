@@ -1113,6 +1113,7 @@ BP : AbstractChuckNewDict {
 		this.exists.if({
 			value.event.put(\voicer, vc);
 			value.bindVoicer(vc);
+			this.changed(\voicer_, vc);
 		});
 	}
 
