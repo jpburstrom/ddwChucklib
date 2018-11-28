@@ -28,6 +28,10 @@
 	isValidIDictKey { ^true }
 }
 
++ TempoClock {
+	bindClassName { ^TempoClock }
+}
+
 + Pattern {
 	isPattern { ^true }
 	bindClassName { ^Pattern }	// same for Patterns
