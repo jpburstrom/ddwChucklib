@@ -88,7 +88,7 @@ PR(\abstractProcess).v.clone({
 			~buffers = ~bufPaths.collect({ |path, i|
 				Buffer.readAndQuery(~chan.server, path, 
 					~bufCoords.wrapAt(i)[0], ~bufCoords.wrapAt(i)[1],
-					completionFunc: e { |buf|
+					completionFunc: inEnvir { |buf|
 						~fixBufTime.(i, buf);
 						if(i == (~bufPaths.size - 1)) { ~postBufferLoad.() };
 				});
@@ -105,7 +105,7 @@ PR(\abstractProcess).v.clone({
 			~addBuf.(path, startFrame, numFrames);
 		}, {
 			~buffers[i].free;
-			~buffers[i] = Buffer.readAndQuery(~chan.server, path, startFrame, numFrames, e { |buf|
+			~buffers[i] = Buffer.readAndQuery(~chan.server, path, startFrame, numFrames, inEnvir { |buf|
 				~fixBufTime.(i, buf)
 			});
 			~buffers[i]
@@ -296,7 +296,7 @@ PR(\abstractProcess).v.clone({
 		var	out;
 		~prepareForPlay.value;	// one use is streams that must persist past 1 bar
 		~sendSynthDef.value;
-		PnNilSafe(Plazy(e {
+		PnNilSafe(Plazy(inEnvir {
 			~doPreAction.value;
 			out = ~makePbindArray.value;
 			out = ~addArgPairs.(out);
@@ -471,7 +471,7 @@ PR(\defPerc).v.clone({
 				});
 				(play: 0, delta: 0)
 			}, 1),
-			PnNilSafe(Plazy(e {
+			PnNilSafe(Plazy(inEnvir {
 				var	out;
 				~doPreAction.value;
 				out = ~makePbindArray.value;
@@ -514,7 +514,7 @@ PR(\bufPerc).v.clone({
 	~compensateEnv = true;
 	
 	~makeStartTimes = { 
-		~makePatternFromArray.(~start, 1).collect(e { |st, event|
+		~makePatternFromArray.(~start, 1).collect(inEnvir { |st, event|
 			~segStart.wrapAt(event[\bufIndex]).wrapAt(st)
 		});
 	};

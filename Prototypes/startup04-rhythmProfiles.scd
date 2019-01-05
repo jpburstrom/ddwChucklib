@@ -59,7 +59,7 @@ if(markovSet.notNil) {
 	
 		~asPattern = #{ 
 			var dur;
-			Pfunc(e {
+			Pfunc(inEnvir {
 				[dur = ~durStream.next, ~lenMarkov.next(dur)]  // .debug("markovRhythm output")
 			})
 		};

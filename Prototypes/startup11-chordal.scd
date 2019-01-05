@@ -380,7 +380,7 @@ PR(\abstractProcess).v.clone({
 			#[\microRhythm, \arpegType], Ptuple([
 				~makeProut.value(\micro),
 				~makeProut.value(\arpeg)], inf))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 		(~argPairs.size > 0).if({
 			Pbindf(out, \argKeys, ~argPairs[0, 2..], * ~argPairs)
 		}, { out });
@@ -447,7 +447,7 @@ PR(\basicMacroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 	};
 
 	~patternAvecTop = #{
@@ -460,7 +460,7 @@ PR(\basicMacroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev|
+		.collect(inEnvir { |ev|
 			~lastEvent = ev;
 			ev
 		});
@@ -499,7 +499,7 @@ PR(\macroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 	};
 
 	~patternAvecTop = #{
@@ -516,7 +516,7 @@ PR(\macroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 	};
 }) => PR(\chTop);
 

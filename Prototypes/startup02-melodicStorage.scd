@@ -237,7 +237,7 @@ PR(\abstractProcess).v.clone({
 	};
 	
 	~addAdaptCollect = #{ |pattern, passInValue, asPatSelector = \asPattern|
-		pattern.collect(e { |seg|
+		pattern.collect(inEnvir { |seg|
 			passInValue[\adaptProb].coin.if({
 				~doAdapt.value(seg, passInValue);
 				(seg.segs.size > passInValue[\variantThreshold]).if({
@@ -411,7 +411,7 @@ Proto({
 		// run each melody segment successively
 	~asSegPattern = #{ |asPatSelector, passInValue|
 		passInValue = passInValue ?? { ~passInValue };
-		~makePhrPattern.value(passInValue).collect(e { |phr|
+		~makePhrPattern.value(passInValue).collect(inEnvir { |phr|
 			phr.notNil.if({
 						// populate adaptation values in phrase, to simplify API
 				phr.putAll((adaptMel: ~adapt));
@@ -425,7 +425,7 @@ Proto({
 		passInValue = passInValue ?? { ~passInValue };
 		(~segStream.isNil or: { passInValue[\resetPhr] ? true }).if({
 			~segStream = CleanupStream(~asSegPattern.value(asPatSelector, passInValue)
-				.asStream, e {
+				.asStream, inEnvir {
 					currentEnvironment.put(\segStream, nil);  // allow reset next time
 				});
 		});

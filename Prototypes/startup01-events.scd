@@ -53,7 +53,7 @@ Proto {
 		inval
 	};
 	~asStream = { Routine { |inval| ~embedInStream.(inval) } };
-	~asPattern = { Prout(e { |inval| ~embedInStream.(inval) }) };
+	~asPattern = { Prout(inEnvir { |inval| ~embedInStream.(inval) }) };
 	~play = { |clock, protoEvent, quant|
 		~asPattern.().play(clock, protoEvent, quant)
 	};

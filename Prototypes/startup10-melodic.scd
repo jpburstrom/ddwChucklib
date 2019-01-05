@@ -202,7 +202,7 @@ PR(\abstractProcess).v.clone({
 				});
 			});
 		})
-		.collect(e { |ev|	// apply extra synth args, if available
+		.collect(inEnvir { |ev|	// apply extra synth args, if available
 			~argsStream.notNil.if({
 				~argsStream.next(ev).put(\argKeys, ~argKeys)
 			}, { ev })
@@ -277,7 +277,7 @@ PR(\aiMel).v.clone({
 		// ProtoEvent(\voicerNote) issues the dependency notification
 	~asPattern = #{ 
 		~asBasePattern.value
-			.collect(e { |ev| ev.put(\bassID, ~bassIDStream.next(ev)) });
+			.collect(inEnvir { |ev| ev.put(\bassID, ~bassIDStream.next(ev)) });
 	};
 }) => PR(\aiBass);
 

@@ -509,7 +509,7 @@ PR(\transient_analysis_file).v.clone({
 		var	result, startFrame = (time * buffer.sampleRate).asInteger;
 		(startFrame < (buffer.numFrames - ~fftsize)).if({
 			fork {
-				buffer.getToFloatArray(startFrame, ~fftsize, action: e { |v|
+				buffer.getToFloatArray(startFrame, ~fftsize, action: inEnvir { |v|
 					result = v;
 					~asyncUnhang.value;	// getToFloatArray action is not environment-safe
 				});
@@ -586,7 +586,7 @@ PR(\transient_analysis_buffer).v.clone({
 
 		~watcher = NodeWatcher.newFrom(s);
 
-		~resp = OSCresponderNode(s.addr, '/tr', e { |t, r, m|
+		~resp = OSCresponderNode(s.addr, '/tr', inEnvir { |t, r, m|
 			var	buf;
 				// ignore if I don't know about the node
 			buf = ~bufs.detect({ |buf| m[1] == buf.node.tryPerform(\nodeID) });
@@ -636,7 +636,7 @@ PR(\transient_analysis_buffer).v.clone({
 			// asClass is used here because you might not have installed the ddwMIDI quark
 			// rather than make chucklib depend on the whole MIDI framework,
 			// I will use this technique to avoid an error on recompile
-		'BasicMIDIControl'.asClass.new(~midiTriggerChan, ~midiTriggerCtlNum, e { |value|
+		'BasicMIDIControl'.asClass.new(~midiTriggerChan, ~midiTriggerCtlNum, inEnvir { |value|
 				// seems we need to trap very rapid triggers
 			(value > 0 and: { (Main.elapsedTime - ~lastTrigTime) > 1.0 }).if({
 				~sendTrigger.value;
@@ -738,7 +738,7 @@ PR(\transient_analysis_buffer).v.clone({
 		buffer.playCount = buffer.playCount + 1;
 		node.notNil.if({
 			~watcher.register(node);
-			Updater(node, e { |node, msg|
+			Updater(node, inEnvir { |node, msg|
 				(msg == \n_end).if({
 					node.releaseDependants;
 					~releaseBufferFromPlay.(buffer);
@@ -913,7 +913,7 @@ PR(\transient_analysis_buffer).v.clone({
 					});
 				}
 			}),
-			e { ~fftThreadWaiting.not.if({ ~fftThreadActive = false }); },
+			inEnvir { ~fftThreadWaiting.not.if({ ~fftThreadActive = false }); },
 			true);
 	};
 	
@@ -990,7 +990,7 @@ PR(\transient_analysis_buffer).v.clone({
 					});
 				}
 			}),
-			e { ~cmpThreadActive = false; },
+			inEnvir { ~cmpThreadActive = false; },
 			true);
 	};
 	
