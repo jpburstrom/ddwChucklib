@@ -840,7 +840,7 @@ BP : AbstractChuckNewDict {
 
 	*initClass {
 		StartUp.add({
-			defaultClock = TempoClock.default;
+			defaultClock = { TempoClock.default };
 				// no matter what the meter is, this will go to the next barline
 			defaultQuant = BasicTimeSpec(-1);
 			defaultEvent = (eventKey: \default);
@@ -1096,7 +1096,7 @@ BP : AbstractChuckNewDict {
 
 	bindTempoClock { |cl| this.clock = cl }
 
-	clock { ^value.clock ? defaultClock }
+	clock { ^value.clock ? defaultClock.value }
 
 	*bindTempoClock { |cl|
 		defaultClock = cl;
@@ -1215,7 +1215,7 @@ BP : AbstractChuckNewDict {
 				or: { value[\alwaysReset] ? false } })
 				.if({
 					(oldEventStreamPlayer = value.eventStreamPlayer).notNil.if({
-						(argClock ? this.clock ? defaultClock)
+						(argClock ? this.clock ? defaultClock.value)
 							.schedAbs(this.eventSchedTime(argQuant), {
 								oldEventStreamPlayer.stop;
 							})
@@ -1226,7 +1226,7 @@ BP : AbstractChuckNewDict {
 		});
 	}
 	populateAdhocVariables { |argClock|
-		value.put(\clock, argClock ? this.clock ? defaultClock).
+		value.put(\clock, argClock ? this.clock ? defaultClock.value).
 			put(\leadTime, leadTime);
 		value.event.isNil.if({ value[\event] = defaultEvent });
 		value.event.put(\clock, this.clock)
