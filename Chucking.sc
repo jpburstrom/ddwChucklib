@@ -93,11 +93,11 @@ AbstractChuckArray {
 
 	*prNew { |index|
 		var	temp;
-		index.respondsTo(\at).not.if({
+		if(index.size == 0) {
 			this.put(index, temp = super.new.prInit(index));
-		}, {
+		} {
 			Error("Index must not be a collection when creating a new object").throw;
-		});
+		};
 		^temp
 	}
 
