@@ -46,7 +46,9 @@ AbstractChuckArray {
 			// there may be support for multiple directories later
 		StartUp.add({
 			var path;
-			directories = [PathName(this.filenameSymbol.asString).pathOnly +/+ "Prototypes/"];
+			if (directories.isNil) {
+				directories = [PathName(this.filenameSymbol.asString).pathOnly +/+ "Prototypes/"];
+			};
 
 			directories.do({ |dir|
 				path = (dir ++ "startup*.scd").pathMatch;
