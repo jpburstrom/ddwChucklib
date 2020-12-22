@@ -34,7 +34,7 @@ SynthDef(\bufGrain, { |start, time, bufnum, rate = 1, amp = 1,
 	var sig;
 	sig = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
-	Out.ar(outbus, sig * amp);
+	OffsetOut.ar(outbus, sig * amp);
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufGrainPan, { |start, time, bufnum, pan, rate = 1, amp = 1,
@@ -42,7 +42,7 @@ SynthDef(\bufGrainPan, { |start, time, bufnum, pan, rate = 1, amp = 1,
 	var sig;
 	sig = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
-	Out.ar(outbus, Pan2.ar(sig, pan, amp));
+	OffsetOut.ar(outbus, Pan2.ar(sig, pan, amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufGrain2, { |start, time, bufnum, rate = 1, amp = 1,
@@ -50,7 +50,7 @@ SynthDef(\bufGrain2, { |start, time, bufnum, rate = 1, amp = 1,
 	var sig;
 	sig = PlayBuf.ar(2, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
-	Out.ar(outbus, sig * amp);
+	OffsetOut.ar(outbus, sig * amp);
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufGrainPan2, { |start, time, bufnum, rate = 1, pan, amp = 1,
@@ -58,7 +58,7 @@ SynthDef(\bufGrainPan2, { |start, time, bufnum, rate = 1, pan, amp = 1,
 	var l, r;
 	#l, r = PlayBuf.ar(2, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
-	Out.ar(outbus, Balance2.ar(l, r, pan, amp));
+	OffsetOut.ar(outbus, Balance2.ar(l, r, pan, amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 // use a pair of enveloped PlayBufs to avoid clicks when looping back on the sample
@@ -76,7 +76,7 @@ SynthDef(\bufRoll, { |start, time = 1, bufnum, rate = 1, amp = 1, strokesPerSec 
 	env = Control.names(\env).kr((0 ! 40).overWrite(envDefault.asArray, 0));
 	sig = (PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), trigs, start, 1) * strokeEnv).sum
 		* EnvGen.ar(env, timeScale: time, doneAction:2);
-	Out.ar(outbus, sig * amp);
+	OffsetOut.ar(outbus, sig * amp);
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufRollPan, { |start, time = 1, bufnum, rate = 1, amp = 1, strokesPerSec = 18, pan = 0,
@@ -92,7 +92,7 @@ SynthDef(\bufRollPan, { |start, time = 1, bufnum, rate = 1, amp = 1, strokesPerS
 	env = Control.names(\env).kr((0 ! 40).overWrite(envDefault.asArray, 0));
 	sig = (PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), trigs, start, 1) * strokeEnv).sum
 		* EnvGen.ar(env, timeScale: time, doneAction:2);
-	Out.ar(outbus, Pan2.ar(sig, pan, amp));
+	OffsetOut.ar(outbus, Pan2.ar(sig, pan, amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufRollPanMove, { |start, time = 1, bufnum, rate = 1, amp = 1, strokesPerSec = 18,
@@ -108,7 +108,7 @@ SynthDef(\bufRollPanMove, { |start, time = 1, bufnum, rate = 1, amp = 1, strokes
 	env = Control.names(\env).kr((0 ! 40).overWrite(envDefault.asArray, 0));
 	sig = (PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), trigs, start, 1) * strokeEnv).sum
 		* EnvGen.ar(env, timeScale: time, doneAction:2);
-	Out.ar(outbus, Pan2.ar(sig, Line.kr(panStart, panEnd, time), amp));
+	OffsetOut.ar(outbus, Pan2.ar(sig, Line.kr(panStart, panEnd, time), amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufRollPanChangeRate, { |start, time = 1, bufnum, rate = 1, amp = 1,
@@ -126,7 +126,7 @@ SynthDef(\bufRollPanChangeRate, { |start, time = 1, bufnum, rate = 1, amp = 1,
 	env = Control.names(\env).kr((0 ! 40).overWrite(envDefault.asArray, 0));
 	sig = (PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), trigs, start, 1) * strokeEnv).sum
 		* EnvGen.ar(env, timeScale: time, doneAction:2);
-	Out.ar(outbus, Pan2.ar(sig, Line.kr(panStart, panEnd, time), amp));
+	OffsetOut.ar(outbus, Pan2.ar(sig, Line.kr(panStart, panEnd, time), amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 
@@ -136,7 +136,7 @@ SynthDef(\bufGrainRLPF, { |start, time, bufnum, rate = 1, amp = 1,
 	sig = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
 	sig = RLPF.ar(sig, ffreq, rq);
-	Out.ar(outbus, sig * amp);
+	OffsetOut.ar(outbus, sig * amp);
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufGrainRLPF2, { |start, time, bufnum, rate = 1, amp = 1,
@@ -145,7 +145,7 @@ SynthDef(\bufGrainRLPF2, { |start, time, bufnum, rate = 1, amp = 1,
 	sig = PlayBuf.ar(2, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
 	sig = RLPF.ar(sig, ffreq, rq);
-	Out.ar(outbus, sig * amp);
+	OffsetOut.ar(outbus, sig * amp);
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 SynthDef(\bufGrainRLPFPan, { |start, time, bufnum, rate = 1, amp = 1,
@@ -154,7 +154,7 @@ SynthDef(\bufGrainRLPFPan, { |start, time, bufnum, rate = 1, amp = 1,
 	sig = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), 1, start, 0)
 		* EnvGen.kr(Env.linen(attack, time, decay), doneAction:2);
 	sig = RLPF.ar(sig, ffreq, rq);
-	Out.ar(outbus, Pan2.ar(sig, pan, amp));
+	OffsetOut.ar(outbus, Pan2.ar(sig, pan, amp));
 }).perform(Library.at(\ddwGlobal, \storeMethod), \ddwSynths);
 
 

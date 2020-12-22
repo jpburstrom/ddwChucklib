@@ -293,7 +293,7 @@ PR(\abstractProcess).v.clone({
 						// run normally until the following sync point
 //bp.eventSchedTime(childObj.quant).debug("starting % play at".format(bp.collIndex));
 					bp.play(childObj.quant, ~clock, childObj.doReset, notify: false);
-					~clock.schedAbs(bp.eventSchedTime(childObj.quant) - 0.05, e {
+					~clock.schedAbs(bp.eventSchedTime(childObj.quant) - 0.05, inEnvir {
 //						currentEnvironment.use({
 							(nextSync = ~nextSyncTime.value).notNil.if({
 //thisThread.clock.beats.debug("now");
@@ -490,7 +490,7 @@ PR(\abstractProcess).v.clone({
 	~asPattern = { 
 		// how to initialize the child streams just before play?
 		~eventSchedTime/*.debug("bpdriver-aspattern-eventschedtime")*/.notNil.if({
-			~clock.schedAbs(~eventSchedTime - 0.05, e {
+			~clock.schedAbs(~eventSchedTime - 0.05, inEnvir {
 //"calling prepareQueue".debug;
 				~prepareQueue.(~eventSchedTime/*.debug("eventSchedTime")*/);
 			});

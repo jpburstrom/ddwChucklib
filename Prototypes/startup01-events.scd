@@ -53,7 +53,7 @@ Proto {
 		inval
 	};
 	~asStream = { Routine { |inval| ~embedInStream.(inval) } };
-	~asPattern = { Prout(e { |inval| ~embedInStream.(inval) }) };
+	~asPattern = { Prout(inEnvir { |inval| ~embedInStream.(inval) }) };
 	~play = { |clock, protoEvent, quant|
 		~asPattern.().play(clock, protoEvent, quant)
 	};
@@ -200,9 +200,9 @@ Proto({
 	~path = #[baseBeat];	// may override
 	// run this action when resuming rhythmic patterns
 	~doAction = { |path|
-		var	beats = ~barLength.nextTimeOnGrid(thisThread.clock);
+		var	beats = ~barLength.nextTimeOnGrid(~clock);
 		Library.global.putAtPath(path ? ~path, beats);
-		thisThread.clock.setMeterAtBeat(~barLength, beats);
+		~clock.setMeterAtBeat(~barLength, beats);
 	};
 	~freeCleanup = {
 		Library.global.removeAtPath(~path)
@@ -275,7 +275,7 @@ setArgs: {
 	var	args, soloargs, polyargs, lib, desc;
 	((lib = SynthDescLib.all[~lib ? \global]).notNil
 		and: { (desc = lib[~instrument.asSymbol]).notNil }).if({
-		~hasGate = desc.hasGate;
+		~hasGate ?? { ~hasGate = desc.hasGate };
 		~msgFunc = desc.msgFunc;
 		}, {
 			~msgFunc = {
@@ -302,8 +302,8 @@ makeNode: {
 			server = ~server;	// for ~trace == true
 			~setArgs.value;
 			(~debug == true).if({
-				//thisThread.clock.debug("my clock");
-				thisThread.clock.beats.debug("\nnow"); ~evArgs.debug("singleSynthPlayer"); });
+				//~clock.debug("my clock");
+				~clock.beats.debug("\nnow"); ~evArgs.debug("singleSynthPlayer"); });
 			~grain = ~grain ? false;
 			nodeID = ~id ?? { ~grain.if({ -1 }, { ~server.nextNodeID }) };
 			~node = Synth.basicNew(~instrument, ~server, nodeID);
@@ -315,7 +315,7 @@ makeNode: {
 			});
 			(~grain.not and: { ~hasGate ? false
 				and: { (sustain = ~sustain.value).notNil and: { sustain != inf } } }).if({
-				thisThread.clock.sched(sustain, {
+				~clock.sched(sustain, {
 					Func(\schedEventBundleArray).doAction(lag, offset, server,
 						[[\n_set, nodeID, \gate, releaseGate]], true);
 					nil
@@ -466,7 +466,7 @@ ProtoEvent(\singleSynthPlayer).v.copy.putAll((
 			sustain = if(~sustain.size > 0) { ~sustain.value.wrapAt(i) } { ~sustain.value };
 			(~grain.not and: { ~hasGate ? false
 				and: { sustain.notNil and: { sustain != inf } } }).if({
-				thisThread.clock.sched(sustain, {
+				~clock.sched(sustain, {
 					Func(\schedEventBundleArray).doAction(latency, offset, server,
 						[[\n_set, nodeID, \gate, releaseGate]], true);
 					nil
@@ -539,7 +539,14 @@ prepNote: #{
 		~length = ~length * currentEnvironment.delta / ~dur;
 	};
 
-	~args = ~args ?? { [~note.tryPerform(\args)].tryPerform(\flatten, 1) } ?? { [] };
+	if(~args.isNil) {
+		~args = ~note.tryPerform(\args);
+		if(~args.isNil or: { ~args.isNumber }) {
+			~args = [];
+		} {
+			~args = ~args.flatten(1);
+		};
+	};
 	i = 0;	// args should be key value pairs, but might be an array of velocities
 	// drop pairs that are not \symbol, value
 	{ i < ~args.size }.while({
@@ -567,7 +574,7 @@ sendBass: {
 		~note ?? { ~note = SequenceNote(~freq, ~dur, ~length[0], ~gate[0]) };
 		Library.put(~bassID, ~note);
 		// allow this thread to finish before alerting dependents
-		thisThread.clock.sched(0, { BP.changed(thisEvent[\bassID], thisEvent); });
+		~clock.sched(0, { BP.changed(thisEvent[\bassID], thisEvent); });
 	});
 },
 
@@ -596,7 +603,7 @@ play: #{
 				// can't use schedEventBundle
 				// because you must not release the VoicerNode
 				// until the proper time comes
-				thisThread.clock.sched(length + timingOffset, {
+				~clock.sched(length + timingOffset, {
 					voicer.releaseNode(node, freq, releaseGate.wrapAt(i),
 						lag + (node.server.latency ? 0));
 				});
@@ -635,7 +642,7 @@ ProtoEvent(\voicerNote).v.copy.putAll((
 			synthLib = ~synthLib ?? { SynthDescLib.global };
 			~desc = synthLib.synthDescs[~instrument];
 			if (~desc.notNil) {
-				~hasGate = ~desc.hasGate;
+				~hasGate ?? { ~hasGate = ~desc.hasGate };
 				~msgFunc = ~desc.msgFunc;
 			}{
 				~hasGate = ~hasGate ? true;
@@ -701,7 +708,7 @@ ProtoEvent(\voicerNote).v.copy.putAll((
 (	play: #{
 	var shouldPlay;
 	(~debug == true).if({
-		thisThread.beats.debug("\nchord trigger event"); currentEnvironment.debug;
+		~beats.debug("\nchord trigger event"); currentEnvironment.debug;
 	});
 	~preAction.value;	// maybe some kind of cleanup?
 	shouldPlay = ~top.isKindOf(Event).not or: { ~top.isRest.not };
@@ -797,11 +804,27 @@ ProtoEvent(\melWrap).v.copy.make({
 ProtoEvent(\melWrap).v.copy.make({
 	// should only be called inside the event
 	~wrapPattern = #{ |pattern|
-		(~length != inf).if({
-			pattern = Pfindur(~length-0.01, pattern);
-			}, {
-				pattern
-		});
+		var dur;
+		if(~length != inf) {
+			dur = ~length - 0.01;
+			Prout { |inval|
+				var stream = pattern.asStream,
+				cleanup = EventStreamCleanup.new,
+				next, now = 0;
+				block { |break|
+					while { (dur - now) > 0.001 } {
+						next = stream.next(inval);
+						if(next.isNil) { break.() };
+						now = now + next.delta;
+						cleanup.update(next);
+						inval = next.yield;
+					};
+				};
+				cleanup.exit(inval);
+			};
+		} {
+			pattern
+		};
 	};
 
 	~getChord = true;	// default; midi input may override -- used??

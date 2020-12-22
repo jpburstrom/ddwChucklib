@@ -40,7 +40,7 @@ AbstractChuckArray {
 				traverseSubclasses.value(subcl);
 			});
 		}).value(this);
-		
+
 			// finalize installation by loading startup*.scd files
 			// from quark directory/Prototypes
 			// there may be support for multiple directories later
@@ -68,7 +68,7 @@ AbstractChuckArray {
 			};
 		});
 	}
-	
+
 	*collectionType { ^Array }
 
 	*collection { ^collection[this.name] }
@@ -78,10 +78,10 @@ AbstractChuckArray {
 		}, { Array.new });
 	}
 	*values { ^this.collection }
-	
+
 		// to be removed later
 	*debugCollection { ^collection }
-	
+
 		// new is misleading: I want to index the collection by CLASS(index)
 		// the default method for AClass() is new, so...
 
@@ -93,14 +93,14 @@ AbstractChuckArray {
 
 	*prNew { |index|
 		var	temp;
-		index.respondsTo(\at).not.if({
+		if(index.size == 0) {
 			this.put(index, temp = super.new.prInit(index));
-		}, {
+		} {
 			Error("Index must not be a collection when creating a new object").throw;
-		});
+		};
 		^temp
 	}
-	
+
 	*put { |index, member|
 			// might need to extend the array so .put will succeed
 		var	collTemp = collection[this.name];
@@ -112,22 +112,22 @@ AbstractChuckArray {
 		ChuckableBrowser.updateGui(this);
 		classHooks.at(this, \put).value(index, member);
 	}
-	
+
 	removeFromCollection {
 			// do it this way b/c removeAt will change indices of other objects, not good
 		classHooks.at(this.class, \free).value(collIndex, this);
 		this.class.collection[collIndex] = nil;
 		ChuckableBrowser.updateGui(this.class);
 	}
-	
+
 		// for objects that don't do anything special on free
 	free {
 		^this.removeFromCollection;
 	}
-	
+
 		// returns values -- since collection is an array, just give the collection
 	*all { ^this.collection }
-	
+
 		// to garbage collect everything for a piece
 		// e.g. Fact.freeType(\techno1)
 	*freeType { |type|
@@ -137,7 +137,7 @@ AbstractChuckArray {
 			});
 		});
 	}
-	
+
 		// free all objects, from any subclass, whose subType == type
 	*freeTypeAll { |type|
 		type.notNil.if({
@@ -146,31 +146,31 @@ AbstractChuckArray {
 			});
 		});
 	}
-	
+
 	*persistent { ^false }
-	
+
 	*freeAll {
 		this.collection.values.do(_.free);
 	}
-	
+
 	*subTypes {
 		var	types = IdentitySet.new;
 		this.collection.do({ |item| types.add(item.subType) });
 		^types.asArray.sort
 	}
-	
+
 	*allOfType { |type|
 		type.notNil.if({
 			^this.collection.select({ |item| item.subType == type }).asArray;
 		}, { ^[] });
 	}
-	
+
 	exists { ^value.notNil }
 	*exists { |index|
 		var	temp = this.collection[index];
 		^temp.tryPerform(\exists) ? false
 	}
-	
+
 	init {}
 
 	prInit { |index|
@@ -179,9 +179,9 @@ AbstractChuckArray {
 		path = thisProcess.nowExecutingPath ?? { path };
 		this.init(index);
 	}
-	
+
 	v { ^value }	// shortcut to get value - keystroke efficiency is paramount!
-	
+
 	storeArgs { ^[collIndex] }  // compilestring will be ClassName.new('index')
 	printOn { |stream|
 		if (stream.atLimit, { ^this });
@@ -235,7 +235,7 @@ AbstractChuckArray {
 			ok.if({ path.loadPath });
 		});
 	}
-	
+
 	doesNotUnderstand { |selector ... args|
 		passThru.if({ ^value.performList(selector, args) }, { ^super.doesNotUnderstand(selector, *args) });
 	}
@@ -302,17 +302,17 @@ AbstractChuckDict : AbstractChuckArray {
 		ChuckableBrowser.updateGui(this);
 		classHooks.at(this, \put).value(index, member);
 	}
-	
+
 	removeFromCollection {
 		classHooks.at(this.class, \free).value(collIndex, this);
 		this.class.collection.removeAt(collIndex);
 		ChuckableBrowser.updateGui(this.class);
 	}
-	
+
 	*collectionType { ^IdentityDictionary }
 	*keys { ^this.collection.keys }
 	*values { ^this.collection.values }
-	
+
 	*listKeys { |type|
 		var collTemp = collection[this.name];
 		collTemp.keys.asArray.reject({ |k| collTemp[k].isNil }).sort.do({ |k|
@@ -321,7 +321,7 @@ AbstractChuckDict : AbstractChuckArray {
 			});
 		});
 	}
-	
+
 		// collection is a dictionary, return a flat Set of values
 	*all { ^this.collection.values }
 }
@@ -353,22 +353,22 @@ VC : AbstractChuckNewDict {
 	init {
 		env = Environment.new.know_(true);
 	}
-	
+
 	use { |function|
 		^env.use(function)
 	}
-	
+
 	bindVoicer { |voicer|
 		value = voicer;
 	}
-	
+
 	bindFact { |fact, adverb, parms|
 			// can be a voicer or an fx factory
 		(fact.isVoicer.not).if({ "wrong type".warn },
 				// default, assume voicer
 			{ this.prBindFact(fact, adverb, parms) });
 	}
-	
+
 		// does the work, but does not check Factory type
 	prBindFact { |fact, adverb, parms|
 		value.notNil.if({ this.free });  // free system resources before replacing
@@ -382,7 +382,7 @@ VC : AbstractChuckNewDict {
 				.format(fact, this).warn;
 		});
 	}
-	
+
 	free {
 			// environment's free func must free all the support objects
 		env.tryPerform(\use, {
@@ -395,15 +395,15 @@ VC : AbstractChuckNewDict {
 		value.free;
 		this.removeFromCollection;
 	}
-	
+
 	bindBP { |bp|
 		bp.bindVC(this)
 	}
-	
+
 	draggedIntoVoicerGUI { |dest|
 		value.tryPerform(\draggedIntoVoicerGUI, dest);
 	}
-	
+
 	draggedIntoMixerGUI { |gui|
 		var	mixer;
 			// must have an environment, a voicer, and the target must be a mixer
@@ -412,7 +412,7 @@ VC : AbstractChuckNewDict {
 				gui.mixer = mixer;
 			});
 	}
-	
+
 	gui { ^value.gui }
 	asMixerChannelGUI { |board|
 		var	mixer;
@@ -422,7 +422,7 @@ VC : AbstractChuckNewDict {
 			^nil
 		};
 	}
-	
+
 	asVC { ^this }
 }
 
@@ -453,7 +453,7 @@ SY : VC {
 			));
 		};
 	}
-	
+
 	bindFact { |fact, adverb, parms|
 		this.prBindFact(fact, adverb, parms)
 	}
@@ -474,12 +474,12 @@ Fact : AbstractChuckNewDict {
 		value = env.know_(true);
 		value.collIndex = collIndex;
 	}
-	
+
 	bindEvent { |env|
 		value = env.know_(true);
 		value.collIndex = collIndex;
 	}
-	
+
 	draggedIntoVoicerGUI { |dest|
 		var	vp;
 		(value.notNil and: { this.isVoicer }).if({
@@ -492,7 +492,7 @@ Fact : AbstractChuckNewDict {
 			});
 		});
 	}
-	
+
 	draggedIntoMTGui { |gui, index|
 		this.isBP.if({
 			gui.model.add(this.makev, index);
@@ -503,7 +503,7 @@ Fact : AbstractChuckNewDict {
 			^false
 		});
 	}
-	
+
 		// convention: the first item in args should be the name of the target object
 		// make and makev supply a default automatically, which is the name of the Fact
 	make { |argEnv ... args|
@@ -535,7 +535,7 @@ Fact : AbstractChuckNewDict {
 		result.tryPerform(\subType_, subType);
 		^result
 	}
-	
+
 	prepareEnv { |argEnv|
 		var	env;
 		env = value.copy;
@@ -553,7 +553,7 @@ Fact : AbstractChuckNewDict {
 		});
 		^env
 	}
-	
+
 	proto {
 		var	str, func;
 		(value.notNil and: { value[\make].notNil }).if({
@@ -567,7 +567,7 @@ Fact : AbstractChuckNewDict {
 			Document.current.selectedString_(str.collection);
 		}, { "\nWARNING:\nFact(%) is empty.\n".postf(collIndex.asCompileString) });
 	}
-	
+
 	isVoicer { ^voicerTypes.includes(value[\type]) }
 	isBP { ^bpTypes.includes(value[\type]) }
 }
@@ -578,7 +578,7 @@ VP : AbstractChuckArray {
 	bindVoicerProxy { |proxy|
 		value = proxy;
 	}
-	
+
 	bindVC { |vc|
 		this.bindVoicer(vc.value);
 		vc.use({ ~onVPchuck.value(this) });	// allow other user defined ops
@@ -590,14 +590,14 @@ VP : AbstractChuckArray {
 			this.bindVC(factory => VC(factory.collIndex));
 		});
 	}
-	
+
 	bindVoicer { |voicer|
 		value.tryPerform(\clearControlProxies);
 		value.voicer_(voicer);
 	}
-	
+
 	bindNil { value.voicer_(NullVoicer.new) }
-	
+
 	bindBP { |bp|
 			// assign the process to play on this voicerproxy
 			// or call useGui if we have it
@@ -607,7 +607,7 @@ VP : AbstractChuckArray {
 			bp.voicer_(value);
 		});
 	}
-	
+
 	bindGenericGlobalControl { |gc, adverb|
 		var gcproxy;
 		(adverb.asString[0].inclusivelyBetween($0, $9)).if({
@@ -615,11 +615,11 @@ VP : AbstractChuckArray {
 		}, {
 			gcproxy = value.getFreeControlProxy(gc);
 		});
-		
+
 			// assign only if we got a valid proxy from the VP
 		gcproxy !? { gcproxy.gc_(gc) };
 	}
-	
+
 	bindCC { |cc, adverb|
 		var gcproxy;
 		(adverb.asString[0].inclusivelyBetween($0, $9)).if({
@@ -630,11 +630,11 @@ VP : AbstractChuckArray {
 
 		gcproxy !? { cc.v.destination = gcproxy };
 	}
-	
+
 	draggedIntoVoicerGUI { |dest|
 		value.tryPerform(\draggedIntoVoicerGUI, dest);
 	}
-	
+
 	*doUseGuiOnBP { |bp, gui|
 		var vpInColl;
 			// useGui in a BP expects the index of the VP object
@@ -642,7 +642,7 @@ VP : AbstractChuckArray {
 			bp.v.useGui(vpInColl.collIndex)
 		});
 	}
-	
+
 	*locateVPbyGui { |gui|
 		^block { |break|
 			this.collection.do({ |vp|
@@ -651,9 +651,9 @@ VP : AbstractChuckArray {
 			break.(nil)
 		}
 	}
-	
+
 	gui { ^value.gui }
-	
+
 	asVC {
 		^VC.collection.values.detect({ |vc|
 			vc.value === this.value.voicer
@@ -692,11 +692,11 @@ MBM : AbstractChuckArray {
 	bindMIDIBufManager { |obj|
 		value = obj;
 	}
-	
+
 	bindMIDIRecBuf { |obj|
 		value.add(obj);
 	}
-	
+
 	bindMRS { |obj, index|
 		var	setNameFunc = { |buf|
 				buf.name = obj.name;	// apply name specified in MRS(\name)
@@ -723,7 +723,7 @@ MBM : AbstractChuckArray {
 			value.initRecord(obj.properties);
 		});
 	}
-	
+
 		// so I can say MBM(0)[1] => BP(\x)
 	at { |index| ^value[index] }
 	current { ^value.current }
@@ -794,7 +794,7 @@ PR : AbstractChuckNewDict {
 			});
 		};
 	}
-	
+
 	hasDefaultMethods {
 		defaultEnv.keysDo({ |key|
 			value[key].isNil.if({ ^false })
@@ -810,7 +810,7 @@ PR : AbstractChuckNewDict {
 
 	bindEvent { |event|
 		value.put(\event, event)
-	}	
+	}
 
 	bindProtoEvent { |proto|
 		value.put(\event, proto.value)
@@ -821,7 +821,7 @@ PR : AbstractChuckNewDict {
 		gui.model.add(this => BP(collIndex), index);
 		^true	// success flag
 	}
-	
+
 		// to avoid clumsy PR(\abc).v.clone - why not PR(\abc).clone({ ... }) => PR(\def)?
 	clone { |func, parentKeys| ^value.clone(func, parentKeys) }
 	copy { ^value.copy }
@@ -840,17 +840,17 @@ BP : AbstractChuckNewDict {
 
 	*initClass {
 		StartUp.add({
-			defaultClock = TempoClock.default;
+			defaultClock = { TempoClock.default };
 				// no matter what the meter is, this will go to the next barline
 			defaultQuant = BasicTimeSpec(-1);
 			defaultEvent = (eventKey: \default);
 		});
 	}
-	
+
 	init {
 		leadTime = defaultLeadTime;
 	}
-	
+
 	free {
 		this.exists.if({
 				// some processes need to do different cleanups if freed while playing
@@ -870,7 +870,7 @@ BP : AbstractChuckNewDict {
 		this.bindProto(process.value.copy.isPrototype_(false), adverb, parms);
 		subType = process.subType;
 	}
-	
+
 		// BPs can store state of wrapper processes, which can be reused by
 		// BP(\wrapper) => BP(\child)
 	bindBP { |process, adverb, parms|
@@ -888,7 +888,7 @@ BP : AbstractChuckNewDict {
 			MethodError("Target BP(%) does not exist.".format(collIndex), this).throw;
 		});
 	}
-	
+
 	bindProto { |process, adverb, parms|
 		(process === value).if({
 			"Cannot chuck a process into itself. Chuck operation ignored.".warn;
@@ -939,7 +939,7 @@ BP : AbstractChuckNewDict {
 		value.prep;	// process can do some initialization on instantiation
 					// if unwrapping, child process should be aware that it's already inited
 	}
-	
+
 	bindFact { |fact, adverb, parms|
 		(fact.isBP).if({
 			^fact.makev(parms, collIndex).subType_(fact.subType);
@@ -947,7 +947,7 @@ BP : AbstractChuckNewDict {
 			"%'s subtype is %; must be 'bp' to chuck into BP.".format(fact, fact.v[\type]).warn;
 		});
 	}
-	
+
 		// collapse multiple binds into one operation
 		// order of binding is not guaranteed (limitation of Dictionaries)
 		// event is (adverb: thing, adverb: thing)
@@ -957,7 +957,7 @@ BP : AbstractChuckNewDict {
 			thing.perform('=>', this, adverb);
 		})
 	}
-	
+
 		// 4 => BP(0) sets quant to BasicTimeSpec(4)
 	bindNilTimeSpec { |spec|
 		this.exists.if({ value.quant = spec; });
@@ -966,7 +966,7 @@ BP : AbstractChuckNewDict {
 	bindQuant { |quant|
 		this.bindNilTimeSpec(quant.asTimeSpec);
 	}
-	
+
 	bindSimpleNumber { |num, adverb|
 		adverb.isNil.if({
 			this.bindNilTimeSpec(num.asTimeSpec);
@@ -974,7 +974,7 @@ BP : AbstractChuckNewDict {
 			value.bindSimpleNumber(num, adverb);
 		});
 	}
-	
+
 	bindArray { |ar|
 		this.bindNilTimeSpec(ar.asTimeSpec);
 	}
@@ -983,17 +983,17 @@ BP : AbstractChuckNewDict {
 	*bindNilTimeSpec { |spec|
 		defaultQuant = spec;
 	}
-	
+
 	*bindSimpleNumber { |num|
 		defaultQuant = num.asTimeSpec;
 	}
-	
+
 	*bindArray { |ar|
 		defaultQuant = ar.asTimeSpec;
 	}
-	
+
 	bindSymbol { |symbol, adverb|
-		this.exists.if({ 
+		this.exists.if({
 			adverb.isNil.if({
 				"Must supply an adverb when chucking a symbol into a BP. No action taken.".warn;
 			}, {
@@ -1007,7 +1007,7 @@ BP : AbstractChuckNewDict {
 	bindMIDIRecBuf { |buf, adverb, parms|
 		this.exists.if({ value.acceptMIDIBuf(buf, adverb, parms); });
 	}
-	
+
 	bindMIDIBufManager { |bufmgr, adverb, parms|
 		this.bindMIDIRecBuf(bufmgr.current, adverb, parms)
 	}
@@ -1015,7 +1015,7 @@ BP : AbstractChuckNewDict {
 	bindMBM { |bufmgr, adverb, parms|
 		this.bindMIDIBufManager(bufmgr.v, adverb, parms)
 	}
-	
+
 		// this needs to wrap the current process in a MIDI input process
 	bindMRS { |mrs, adverb|	// adverb is type of material
 		this.exists.if({
@@ -1035,20 +1035,20 @@ BP : AbstractChuckNewDict {
 			value.preparePlay;
 		});
 	}
-	
+
 	bindModalSpec { |mode, adverb|
 		this.exists.if({ value.mode_(mode, adverb); });
 	}
-	
+
 	bindMode { |mode, adverb|
 		this.exists.if({ value.mode_(mode.collIndex, adverb); });
-	}		
-	
+	}
+
 		// remove all adaptation sources and results (original material only will be left)
 		// will also traverse children
 	clearAdapt {
 		var	child;
-		this.exists.if({ 
+		this.exists.if({
 			child = value;
 			{ child.notNil }.while({
 				child.clearAdapt;
@@ -1056,21 +1056,21 @@ BP : AbstractChuckNewDict {
 			});
 		});
 	}
-	
+
 		// patterns for micro/macro rhythm keys
 	bindPattern { |pat, adverb|
 		this.exists.if({ value.bindPattern(pat, adverb); });
 	}
-	
+
 	bindMacRh { |pat, adverb|
 		this.exists.if({ value.bindPattern(pat, adverb ? \macro) });
 	}
-	
+
 		// really? not sure about this
 	bindMicRh { |pat, adverb|
 		this.exists.if({ value.bindPattern(pat, adverb ? \micro) });
 	}
-	
+
 	bindArpegPat { |pat, adverb|
 		this.exists.if({ value.bindPattern(pat, adverb ? \arpeg) });
 	}
@@ -1078,38 +1078,45 @@ BP : AbstractChuckNewDict {
 	bindSA { |sa, adverb|
 		this.exists.if({ value.bindSA(sa, adverb) });
 	}
-	
+
 		// must not do this while playing
 	clock_ { |cl|
 		this.isPlaying.not.if({		// also handles situation of empty bp
-			value.put(\clock, cl);
+			// quite ugly hack: I can't directly override clock_
+			// because we have Object:clock_ :-\
+			if(value['clock_'].isFunction) {
+				value.perform('clock_', cl);
+			} {
+				value[\clock] = cl;
+			};
 		}, {
 			Error("Cannot change the clock while playing.").throw;
 		});
 	}
-	
+
 	bindTempoClock { |cl| this.clock = cl }
-	
-	clock { ^value.clock ? defaultClock }
+
+	clock { ^value.clock ? defaultClock.value }
 
 	*bindTempoClock { |cl|
 		defaultClock = cl;
 	}
-	
+
 		// add a method to this BP from the Func library
 	bindFunc { |func, adverb|
 		value[adverb] = func.v;
 	}
-	
+
 		// will try to change voicer while playing
 		// if this is a wrapper, voicer will not change until the next event for outermost wrapper
 	voicer_ { |vc|
 		this.exists.if({
 			value.event.put(\voicer, vc);
 			value.bindVoicer(vc);
+			this.changed(\voicer_, vc);
 		});
 	}
-	
+
 	bindVoicer { |vc|
 		this.voicer = vc;
 	}
@@ -1118,12 +1125,12 @@ BP : AbstractChuckNewDict {
 		this.voicer = vp;
 		value.bindVoicerProxy(vp);
 	}
-	
+
 	bindVC { |vc|
 		this.voicer = vc.value;
 		value.bindVC(vc);
 	}
-	
+
 	bindVP { |vp|
 		this.voicer = vp.value;
 		value.bindVP(vp);
@@ -1165,6 +1172,7 @@ BP : AbstractChuckNewDict {
 							this.changed(\schedFailed);
 							^this
 						});
+						// do not move this -- prepareForPlay may depend on eventSchedTime
 						value[\eventSchedTime] = goTime;
 						this.prepareForPlay(argQuant, argClock, doReset);
 						if(value[\eventStreamPlayer].notNil) {
@@ -1207,7 +1215,7 @@ BP : AbstractChuckNewDict {
 				or: { value[\alwaysReset] ? false } })
 				.if({
 					(oldEventStreamPlayer = value.eventStreamPlayer).notNil.if({
-						(argClock ? this.clock ? defaultClock)
+						(argClock ? this.clock ? defaultClock.value)
 							.schedAbs(this.eventSchedTime(argQuant), {
 								oldEventStreamPlayer.stop;
 							})
@@ -1218,7 +1226,7 @@ BP : AbstractChuckNewDict {
 		});
 	}
 	populateAdhocVariables { |argClock|
-		value.put(\clock, argClock ? this.clock ? defaultClock).
+		value.put(\clock, argClock ? this.clock ? defaultClock.value).
 			put(\leadTime, leadTime);
 		value.event.isNil.if({ value[\event] = defaultEvent });
 		value.event.put(\clock, this.clock)
@@ -1229,7 +1237,7 @@ BP : AbstractChuckNewDict {
 	}
 	eventSchedTime { |argQuant|
 		var	time;
-		this.exists.if({ 
+		this.exists.if({
 			time = this.quant(argQuant).bpSchedTime(this);
 			if(time.isNumber) {
 				^(time >= this.clock.beats).if({ time }, { nil });
@@ -1246,8 +1254,26 @@ BP : AbstractChuckNewDict {
 		}, { ^nil });
 	}
 	leadTime_ { |lat|
+		this.setLeadTime(lat)
+	}
+	setLeadTime { |lat, q|
+		var diff, clock, time;
 		this.isPlaying.if({
-			"Cannot set leadTime while BP(%) is playing.".format(collIndex).warn;
+			// "Cannot set leadTime while BP(%) is playing.".format(collIndex).warn;
+			diff = lat - leadTime;  // new - old; if raising leadTime, this is positive
+			// quantize to barline
+			clock = this.clock;
+			time = this.eventSchedTime(this.quant(q)) - diff - 0.01;
+			if(time >= clock.beats) {
+				clock.schedAbs(time, {
+					leadTime = lat;
+					this.populateAdhocVariables;
+					this.replay(value[\eventStreamPlayer], value, diff);
+				});
+			} {
+				"BP(%): leadTime not set (too late to reschedule this barline)"
+				.format(collIndex.asCompileString).warn;
+			};
 		}, {
 			leadTime = lat;
 			this.populateAdhocVariables;
@@ -1260,7 +1286,7 @@ BP : AbstractChuckNewDict {
 			^nil
 		});
 	}
-	
+
 		// useful for wrapper processes--set up a midi trigger to fire ONE child process
 	triggerOneEvent { |argQuant, argClock, doReset|
 		var	event, saveEvent;
@@ -1284,7 +1310,7 @@ BP : AbstractChuckNewDict {
 			});
 		});
 	}
-			
+
 	stop { |argQuant|
 		var	time;
 		this.exists.if({
@@ -1307,7 +1333,7 @@ BP : AbstractChuckNewDict {
 			this.changed(\stop, \request);
 		});
 	}
-	
+
 		// for rewrapping/replacing -- specify a Proto to use
 		// there may be cases where I don't want to notify dependents
 	stopNow { |adhoc, quant, notify = true, doCleanup = true, notifyTime|
@@ -1330,13 +1356,26 @@ BP : AbstractChuckNewDict {
 			notify.if({ this.changed(\stop, \stopped, notifyTime) });
 		});
 	}
-	
+
 	asStream {
 		var	stream;
-		this.exists.if({ 
+		this.exists.if({
 			stream = value.use({
 					// by entering the environment for asStream, PR/BP code can be simpler
-				this.asPattern.asStream;
+				Pprotect(this.asPattern, { |error, routine|
+					// I might remove this condition later.
+					// It's theoretically possible that an error might occur
+					// in a stream that has already been replaced
+					// by rescheduling or re-wrapping.
+					// If the error occurred in a stream that is not currently active,
+					// then we don't have to stop anything (just let the old stream die).
+					if(routine === value[\eventStream]) {
+						defer {
+							this.stopNow;  // set the BP's state
+							this.reset;    // and, clear the error condition for next time
+						};
+					};
+				}).asStream;
 			});
 			value.put(\eventStream, stream);
 			^stream
@@ -1361,7 +1400,7 @@ BP : AbstractChuckNewDict {
 			// then, this will make sure eventStreamPlayer is also not populated
 			try { this.asStream } { |e| err = e };
 			if(value[\eventStream].isKindOf(Stream)) {
-				value.put(\eventStreamPlayer, 
+				value.put(\eventStreamPlayer,
 					BlockableEventStreamPlayer(value[\eventStream], event)/*.refresh*/);
 				value[\eventStreamPlayerWatcher] = updater = Updater(value[\eventStreamPlayer], { |obj, what|
 					if(what == \stopped and: { value.notNil and: { obj === value[\eventStreamPlayer] } }) {
@@ -1397,12 +1436,12 @@ BP : AbstractChuckNewDict {
 		}, { ^nil });
 	}
 	canStream { ^(value.canStream ? true) }
-	
+
 	prepareEvent {
 		var	key = value[\event][\eventKey];
 		(key.notNil or: { value[\event].parent.isNil }).if({
 			key ?? { key = \default };
-			ProtoEvent(key).exists.if({
+			ProtoEvent.exists(key).if({
 				^value[\event].copy.put(\parent, ProtoEvent(key).v)
 					.put(\collIndex, collIndex);
 			});
@@ -1428,7 +1467,7 @@ BP : AbstractChuckNewDict {
 			self.changed(\stop, \stopped);	// if self is nil, this is still OK
 		}
 	}
-		
+
 		// re-pattern, and restart stream if playing
 		// should I follow the naming convention of stopNow / stop?
 		// would break code
@@ -1447,7 +1486,7 @@ BP : AbstractChuckNewDict {
 			this.changed(\reset);
 		});
 	}
-	
+
 	resetq { |argQuant|
 		this.exists.if({
 			value[\clock].notNil.if({
@@ -1457,7 +1496,7 @@ BP : AbstractChuckNewDict {
 			}, { this.reset; });	// no clock, must do it now
 		});
 	}
-	
+
 		// tryPerform because otherwise Object-isPlaying is invoked (always false)
 	isPlaying { ^value.tryPerform(\isPlaying) ? false }
 	isDriven { ^value.tryPerform(\isDriven) ? false }
@@ -1509,7 +1548,7 @@ BP : AbstractChuckNewDict {
 			Error("This is not a wrapper process. Wrapping not done.").throw;
 		});
 	}
-	
+
 		// pop one wrapper process off the stack (lifo)
 		// can use BP(\x).unwrap => BP(\y) to save state of wrapper, or to call freeCleanup
 	unwrap { |doReplay = true|
@@ -1525,7 +1564,7 @@ BP : AbstractChuckNewDict {
 		});
 		^oldWrapper	// returns nil on failure
 	}
-	
+
 // throw everything out and start with this incoming process
 // this method is not fully supported yet
 	overwrite { |process|
@@ -1549,8 +1588,8 @@ BP : AbstractChuckNewDict {
 		});
 		value = process;
 	}
-	
-	replay { |oldEventStreamPlayer, oldAdhoc|	// process must be playing
+
+	replay { |oldEventStreamPlayer, oldAdhoc, leadTimeDiff = 0|	// process must be playing
 		var	nextTime, updater;
 		(oldEventStreamPlayer.isPlaying and: { oldEventStreamPlayer.nextBeat.notNil }).if({
 			nextTime = oldEventStreamPlayer.nextBeat;
@@ -1566,10 +1605,10 @@ BP : AbstractChuckNewDict {
 			oldEventStreamPlayer.stop;
 			value[\isPlaying] = true;
 				// make a new one and schedule it for the next event time
-			this.asEventStreamPlayer.play(value[\clock], false, AbsoluteTimeSpec(nextTime));
+			this.asEventStreamPlayer.play(value[\clock], false, AbsoluteTimeSpec(nextTime - leadTimeDiff));
 		});
 	}
-	
+
 		// to be stored in play event
 		// assumes we're in the environment already
 	propagateDownFunc {
@@ -1584,7 +1623,7 @@ BP : AbstractChuckNewDict {
 			});
 		}
 	}
-	
+
 		// this should be called on wrapping/unwrapping
 		// I don't want to do this per note!
 	recalcPropagateKeys {
@@ -1607,7 +1646,7 @@ BP : AbstractChuckNewDict {
 			child = child.child;
 		});
 	}
-	
+
 	promoteChildEventObjects {
 		var	childEvent, event;
 		(value[\child].notNil and: { (childEvent = value[\child][\event]).notNil
@@ -1619,15 +1658,15 @@ BP : AbstractChuckNewDict {
 			});
 		});
 	}
-	
+
 		// GUI support
-	
+
 		// midi trigger support
 	draggedIntoMTGui { |gui, index|
 		gui.model.add(this, index);
 		^true	// success flag
 	}
-	
+
 	draggedIntoVoicerGUI { |gui|
 		var	voicer;
 		(voicer = gui.model).active.if({
@@ -1644,7 +1683,7 @@ BP : AbstractChuckNewDict {
 			value[\useGui].notNil.if({ VP.doUseGuiOnBP(this, gui) });
 		});
 	}
-	
+
 	draggedIntoMixerGUI { |gui|
 		value[\chan].notNil.if({
 			gui.mixer_(value[\chan])
@@ -1660,6 +1699,24 @@ BP : AbstractChuckNewDict {
 		} {
 			^nil
 		};
+	}
+
+	asMixer { |key(\chan)|  // 'key' is for adverb support: BP(\name) =>.key MCG(0)
+		var mixer;
+		if(this.exists) {
+			if(value[key].isMixerChannel) { ^value[key] };
+			// try default mixer key
+			if(key != \chan and: { value[\chan].isMixerChannel }) { ^value[\chan] };
+			// try voicer
+			if(value[\event][\voicer].notNil) {
+				mixer = value[\event][\voicer].bus.asMixer;
+				if(mixer.notNil) { ^mixer };
+			};
+			Error("Could not find a MixerChannel for BP(%)".format(collIndex.asCompileString)).throw;
+		};
+		Error(
+			"BP(%) does not exist; can't find MixerChannel for it".format(collIndex.asCompileString)
+		).throw;
 	}
 
 		// for BP, using a pseudomethod not defined in the Proto
@@ -1684,7 +1741,7 @@ MicRh : AbstractChuckNewDict {
 	bindPattern { |pattern|
 		value = pattern;
 	}
-	
+
 		// #{ populate some variables, then return a pattern based on the vars } => MicRh(...)
 		// also, #{ |notePattern| Pfin(notePattern.estimateLength, notePattern) }
 		// to allow gestures to retain their integrity across note-pattern changes
@@ -1698,7 +1755,7 @@ MicRh : AbstractChuckNewDict {
 				.format(this.asCompileString)).throw;
 		}
 	}
-	
+
 		// will be called at play time
 		// if value is already a Pattern, .value will return the pattern unmodified
 		// a function will be executed -- notePattern is for pattern length estimation
@@ -1731,7 +1788,7 @@ ProtoEvent : AbstractChuckNewDict {
 			value.parent.putAll(event);
 		});
 	}
-	
+
 		// quick way to compose an event with multiple types from existing ProtoEvents
 		// ProtoEvent.composite(#[singleSynthPlayer, polySynthPlayer]) => ProtoEvent(\new);
 		// protoEvent in the event to play indicates which play function to use
@@ -1759,7 +1816,7 @@ ProtoEvent : AbstractChuckNewDict {
 		});
 		^out
 	}
-	
+
 	copy { ^value.copy }
 }
 
@@ -1781,9 +1838,9 @@ SA : AbstractChuckNewDict {
 	bindArray { |array|
 		#value, argKeys = array;
 	}
-	
+
 	// bindFunction?
-	
+
 	asPattern { ^value }
 }
 
@@ -1793,11 +1850,11 @@ MCG : AbstractChuckArray {
 	*persistent { ^true }
 
 	bindMixerChannelGUI { |gui| value = gui }
-	
+
 	bindMixerChannel { |channel|
 		value.mixer = channel;
 	}
-	
+
 	bindVC { |vc, adverb|
 		var	mix;
 		adverb ?? { adverb = \target };
@@ -1809,15 +1866,29 @@ MCG : AbstractChuckArray {
 				{ "VC's target is not a MixerChannel. Can't bind into MCG.".postln; });
 		});
 	}
-	
+
 	bindBP { |bp, adverb|
-		adverb ?? { adverb = \chan };
-		(bp.exists and: { bp.v[adverb].notNil }).if({
-			try { value.mixer_(bp.v[adverb]) }
-				{ "Error during MCG-bindBP.".postln }
-		});
+		var old, mixer = bp.asMixer(adverb);
+		if(mixer.isMixerChannel) {
+			try {
+				old = value.mixer;
+				value.mixer_(mixer);
+			} { |error|
+				error.reportError;
+				"^^ Error during MCG-bindBP.".postln;
+				// on error, revert to previous object
+				// in theory this should not happen
+				// but a bad object in a mixer slot can break mixingboard updates
+				// so, be safe about it
+				value.mixer_(old);
+			}
+		} {
+			"BP(%).% is %, not a MixerChannel".format(
+				bp.collIndex.asCompileString, adverb, bp.v[\adverb]
+			).warn
+		};
 	}
-	
+
 	bindVP { |vp|
 		var	mix = vp.v.tryPerform(\voicer).tryPerform(\bus).tryPerform(\asMixer);
 		mix.notNil.if({
@@ -1825,7 +1896,7 @@ MCG : AbstractChuckArray {
 				"VC's target is not a MixerChannel. Can't bind into MCG.".postln;
 			});
 		}, { "VC's target is not a MixerChannel. Can't bind into MCG.".postln; });
-	}		
+	}
 }
 
 // overall modalspec for piece
@@ -1834,17 +1905,18 @@ Mode : AbstractChuckNewDict {
 	bindModalSpec { |mode|
 		value = mode
 	}
-	
+
 	bindArray { |modeNames|
 		value = modeNames;  // .collect({ |name| Mode(name).v });
 	}
-	
+
 	bindSymbol { |modeName|
 		value = Mode(modeName).copy;
 	}
-	
+
 	asMode { ^this }
-	
+	bindMode { |mode| this.bindModalSpec(mode.value) }
+
 		// delegation to referenced object
 	doesNotUnderstand { |selector ... args|
 		var mode;
@@ -1860,21 +1932,21 @@ Func : AbstractChuckNewDict {
 		value = func;
 		nilProtect = (adverb == \protectNil);
 	}
-	
+
 		// args will usually include source material and material to crossbreed with it
 	doAction { |... args|
 		(this.exists and: { nilProtect }).if({
 			^value.valueArray(args) ? args[0]
 		}, { ^value.valueArray(args) });
 	}
-	
+
 		// .eval is a close alternative, maybe more intuitive than doAction
 	eval { |... args|
 		(this.exists and: { nilProtect }).if({
 			^value.valueArray(args) ? args[0]
 		}, { ^value.valueArray(args) });
 	}
-	
+
 		// this means Func(\xyz).value will not return the Function object itself
 		// but you can still get it with Func(\xyz).v
 	value { |... args|
@@ -1882,18 +1954,18 @@ Func : AbstractChuckNewDict {
 			^value.valueArray(args) ? args[0]
 		}, { ^value.valueArray(args) });
 	}
-	
+
 	listArgs {
 		this.streamArgs(Post);
 	}
-	
+
 	proto {
 		var	stream;
 		stream = CollStream(String.new(256));
 		this.streamArgs(stream);
 		Document.current.selectedString_("\n" ++ stream.collection)
 	}
-	
+
 	streamArgs { |collstream|
 		collstream << "Func(" <<< collIndex << ").value(";
 		value.streamArgs(collstream);	// add function args
@@ -1912,7 +1984,7 @@ MT : AbstractChuckNewDict {
 	classvar	<>readyThreshold = 5;	// how long to hold a process in ready state before clearing
 	classvar	<>defaultMinNote = 48, <>defaultMaxNote = 72;  // integer note numbers
 	var	<lastBP, noteAllocator;
-	
+
 	var	<socket, <>minNote, <>maxNote;	// midi responder, passes messages here
 	var	readyID = 0;
 
@@ -1929,7 +2001,7 @@ MT : AbstractChuckNewDict {
 		var	collTemp;
 		^collection[this.name][index = index.asChannelIndex] ?? { this.prNew(index) }
 	}
-	
+
 		// needed b/c MIDIChannelIndices can be == but not ===
 	*collectionType { ^Dictionary }
 
@@ -1941,7 +2013,7 @@ MT : AbstractChuckNewDict {
 		noteAllocator = ContiguousBlockAllocator(maxNote+1, minNote);
 		default = this;
 	}
-	
+
 	free {
 		this.changed(\free);
 		socket.free;
@@ -1960,7 +2032,7 @@ MT : AbstractChuckNewDict {
 	bindBP { |bp, adverb|
 		this.add(bp, adverb);
 	}
-	
+
 	bindFact { |fact, adverb|
 		(fact.isBP).if({
 			this.add(fact.makev.subType_(fact.subType), adverb)
@@ -1968,13 +2040,13 @@ MT : AbstractChuckNewDict {
 			"%'s type is %; must be 'bp' to chuck into MT.".format(fact, fact.v[\type]).warn;
 		});
 	}
-	
+
 		// support for BP([\pr1, \pr2, \pr3, \pr4]) => MT(0) syntax
 		// you give up control over where they go
 	bindArray { |ar|
 		ar.do({ |bp| bp => this });
 	}
-	
+
 	add { |bp, adverb, updateGUI = true|
 		var new, nextAddNote;
 			// remove from other slots first
@@ -1993,7 +2065,7 @@ MT : AbstractChuckNewDict {
 		value.put(nextAddNote, new = MTNoteInfo(bp, 0, nextAddNote, this));
 		updateGUI.if({ this.changed(new) });	// tell the gui
 	}
-	
+
 	removeAt { |notenum|
 		noteAllocator.free(notenum);
 		this.changed(notenum);
@@ -2012,7 +2084,7 @@ MT : AbstractChuckNewDict {
 			^noteAllocator.alloc(1)
 		});
 	}
-	
+
 	noteOn { |num|
 		var	entry, clock, localReady;
 			// entry must exist
@@ -2040,22 +2112,22 @@ MT : AbstractChuckNewDict {
 			};
 		});
 	}
-	
+
 	guiClass { ^MTGui }
 }
 
 MTNoteInfo {
 	var	<>bp, <>ready, <>noteNum, <owner, <schedFailed = false;
-	
+
 	*new { |bp, ready, noteNum, owner|
 		var new;
 		new = super.newCopyArgs(bp, ready, noteNum, owner);
 		bp.addDependant(new);
 		^new
 	}
-	
+
 	asString { ^(noteNum.asMIDINote ++ ": " ++ bp.collIndex) }
-	
+
 	playState {
 		^case { ready > 0 } { \ready } // ready takes precedence
 			{ schedFailed } { \late }
@@ -2063,9 +2135,9 @@ MTNoteInfo {
 			{ bp.isPlaying } { \playing }
 			{ \idle }
 	}
-	
+
 	free { bp.removeDependant(this) }
-	
+
 	update { |obj, changer|
 		case
 			{ changer == \free } {

@@ -307,15 +307,18 @@ AbstractChuckArray.defaultSubType = \chordFit;
 	transposeStats = notes.collect({ |n|
 		[xposeBy = (top - n).asFloat,
 		 Func(\chPitchFit).doAction(notes + xposeBy, top, root, mode, fitFactors)];
-	}).sort({ |a, b| a[1] > b[1] });  // sort fitnesses descending
+	});  // .sort({ |a, b| a[1] > b[1] });  // sort fitnesses descending
+	// and the winner is (choose max based on second in pair)...
+	transposeStats = transposeStats.maxItem { |pair| pair[1] };
+
 		// transpose the whole chord
-	Func(\fixNotesAboveTop).doAction(notes + transposeStats[0][0], top, mode);
+	Func(\fixNotesAboveTop).doAction(notes + transposeStats[0], top, mode);
 } => Func(\chordFitNotes);
 
 // interval strategy -- produce final chord forms by traversing the intervals in a tree structure
 #{ |source, inEvent, fitFactors|
 	var resultList = Func(\collectChordsByInt).doAction(source, inEvent, fitFactors),
-		fitness,		// [[0, fitness0], [1, fitness1]]
+		fitness, index,		// [[0, fitness0], [1, fitness1]]
 		mode, topEvent, top, topMode, root, notes;
 
 	#mode, topEvent, top, topMode, root, notes =
@@ -323,11 +326,13 @@ AbstractChuckArray.defaultSubType = \chordFit;
 
 	fitness = resultList.collect({ |ch, i|
 		[i, Func(\chPitchFit).doAction(ch, top, root, mode, fitFactors)]
-	}).sort({ |a, b| a[1] > b[1] });
+	});  // .sort({ |a, b| a[1] > b[1] });
+	// and the winner is...
+	fitness = fitness.maxItem { |pair| pair[1] };
 
-		// output -- fitness[0] is best fit, second [0] gets index into resultList
+		// output
 		// dur and length should be replaced by microrhythm
-	resultList[fitness[0][0]].collect({ |freq| SequenceNote(freq, 1, 1) })
+	resultList[fitness[0]].collect({ |freq| SequenceNote(freq, 1, 1) })
 } => Func(\chordFitInt);
 
 // more code, but faster...

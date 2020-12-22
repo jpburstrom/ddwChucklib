@@ -14,7 +14,7 @@ PR(\abstractProcess).v.clone({
 		~notes = notes.asArray.collect({ |n| n.asNoteArray }).flat;
 		currentEnvironment
 	};
-	
+
 		// subclasses will use keys in inEvent to adapt to topnote, etc.
 	~asPattern = #{ |inEvent|
 		ArpegPat(inEvent[\arpegType]).asPattern(~notes, inEvent)
@@ -81,22 +81,22 @@ PR(\abstractModeSeg).v.clone({
 		};
 		currentEnvironment
 	};
-	
+
 	~mapToMIDI = #{ |mode|
 		~notes = ~notes.unmapMode(mode);
 		currentEnvironment
 	};
-	
-	~analyzeNotes = #{ 
+
+	~analyzeNotes = #{
 		~hiNote = ~notes.maxItem;
 		~loNote = ~notes.minItem;
 		currentEnvironment
 	};
-	
+
 	~modeForEvent = { |ev|
 		~modeOverride ?? { ~useOwnMode.if({ ~mode }, { ev[\mode] }) };
 	};
-	
+
 	~modeOverride_ = { |mode|
 		(mode !== ~modeOverride).if({
 			~modeOverride = mode;
@@ -136,15 +136,15 @@ PR(\abstractProcess).v.clone({
 		// give keys for prototypes
 	~chordProto = \chordModeSeg;
 	~mode = \default;
-	
+
 	~event = (eventKey: \voicerNote);
-	
-	~preparePlay = #{ 
+
+	~preparePlay = #{
 		~chordStream = ~chordStream ?? { ~makeChordPattern.value.asStream };
 		currentEnvironment
 	};
-	
-	~reset = #{ 
+
+	~reset = #{
 		~chordStream = nil;
 		~preparePlay.value;	// should return currentEnvironment
 	};
@@ -172,20 +172,22 @@ PR(\abstractProcess).v.clone({
 			~currentChord = ~chordStream.next(inEvent);
 		});
 	};
-	
+
 	~updateNoteStream = #{ |inEvent, bassID|
-		bassID !? { inEvent.put(\bassID, bassID) };
-		~noteStream = (~notePattern = ~currentChord.asPattern(inEvent, ~fitFunc.value(~currentChord)))
+		if(inEvent.isRest.not) {
+			bassID !? { inEvent.put(\bassID, bassID) };
+			~noteStream = (~notePattern = ~currentChord.asPattern(inEvent, ~fitFunc.value(~currentChord)))
 			.asStream;
+		};
 	};
-	
+
 	~updateBass = #{ |lastEvent, bassID|
 			// maybe you don't want the process to update every bass note
 		(lastEvent.tryPerform(\at, \updateOnBass) ? true).if({
 			~updateNoteStream.value(lastEvent, bassID)
 		});
 	};
-	
+
 	~nextNoteStream = #{ |inEvent|
 		~nextNotePattern.value(inEvent);
 		~updateNoteStream.value(inEvent);
@@ -208,7 +210,7 @@ PR(\abstractProcess).v.clone({
 				});
 			}, {
 					// fall back for midi input
-				out = (notes:~notes);
+				out = (notes: ~notes);
 				ArpegPat(inEvent[\arpegType]).asPattern(
 					Func(~fitFunc.value(out)).doAction(out, inEvent, ~getFit.value),
 					inEvent)
@@ -233,14 +235,14 @@ PR(\abstractProcess).v.clone({
 		};
 		~asPatternHook.(out) ?? { out };
 	};
-	
+
 	~acceptMIDIBuf = #{ |buf, adverb, parms|
 		~chords = ~prepareSequence.value(buf, parms);
 		~chordStream = ~makeChordPattern.value.asStream;   // reset the chord stream
 	};
-	
+
 	~prepareSequence = #{ |buf, parms|
-		var 	notes, avgDur;
+		var 	notes, avgDur, mode;
 			// why I'm using a parms dictionary: grab more parameters without changing method args
 		parms.tryPerform(\at, \fitFunc).notNil.if({ ~fitFunc = parms[\fitFunc] });
 			// partition on rhythm - in general, notes belonging to the same chord will have
@@ -252,12 +254,16 @@ PR(\abstractProcess).v.clone({
 			// and have them preserved
 		notes = buf.notes.separate({ |a, b| a.isChord or: { a.dur > avgDur } });
 			// now make a chord object for each set of notes - this is function output
+		mode = ~modeForChordObjects.(buf, parms);
 		notes.collect({ |ch|
 				// true = unmap notes to mode
 			PR(~chordProto).v.copy.prepare(ch.asNoteArray,
-				parms.atBackup(\mode, buf.properties, currentEnvironment),
+				mode,
 				parms.tryPerform(\at, \rawMIDI) ? true, parms)
 		})
+	};
+	~modeForChordObjects = { |buf, parms|
+		parms.atBackup(\mode, buf.properties, currentEnvironment) ?? { \default }
 	};
 }, nil, #[\chordProto]) => PR(\arpeg1);
 
@@ -293,7 +299,7 @@ PR(\abstractProcess).v.clone({
 		});
 		currentEnvironment
 	};
-	
+
 	~update = #{ |obj, changer ... args|
 		if(~updaters.tryPerform(\at, changer).notNil) {
 			~updaters[changer].value(obj, changer, *args)
@@ -307,7 +313,7 @@ PR(\abstractProcess).v.clone({
 			~child.updateBass(~lastEvent, changer);
 		});
 	};
-	
+
 	~bassID_ = { |bassID|
 		if(~updaters.tryPerform(\at, ~bassID).notNil) {
 			~updaters.removeAt(~bassID);
@@ -318,11 +324,11 @@ PR(\abstractProcess).v.clone({
 		};
 		currentEnvironment
 	};
-	
+
 	~bindSimpleNumber = #{ |num, adverb|
 		adverb.envirPut(num);
 	};
-	
+
 	~makeStreamForKey = #{ |key, streamKey, envir|
 		var	stream = key.envirGet;
 		envir.notNil.if({
@@ -352,21 +358,21 @@ PR(\abstractProcess).v.clone({
 			});
 		});
 	};
-	
-	~preparePlay = #{ 
+
+	~preparePlay = #{
 		~child.tryPerform(\preparePlay);
 		currentEnvironment
 	};
-	~reset = #{ 
+	~reset = #{
 		~child.reset;
 		currentEnvironment
 	};
-	
+
 	~event = (eventKey: \macroRh);
 
 	~requiredKeys = #[\macro, \micro, \arpeg];
 	~rewrapKeys = ~requiredKeys;
-	
+
 	~asPattern = #{ |inEvent|
 		var	out;
 			// if length is nil, it picks up delta; sim. for arpegType
@@ -374,12 +380,12 @@ PR(\abstractProcess).v.clone({
 			#[\microRhythm, \arpegType], Ptuple([
 				~makeProut.value(\micro),
 				~makeProut.value(\arpeg)], inf))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 		(~argPairs.size > 0).if({
 			Pbindf(out, \argKeys, ~argPairs[0, 2..], * ~argPairs)
 		}, { out });
 	};
-	
+
 	~freeCleanup = {
 		~userfree.();
 	};
@@ -418,16 +424,17 @@ PR(\basicMacroRh).v.clone({
 			};
 		currentEnvironment		// return
 	};
-	
+
 	~getMode = PR(\aiMel).v[\getMode];
 	~mode_ = #{ |mode|
 		mode = mode.tryPerform(\collIndex) ? mode ? \default;  // pass a symbol in as the mode
 		~child !? { ~child.mode = mode };
+		if(~topNote.isKindOf(Proto)) { ~topNote.mode = mode };
 		currentEnvironment.put(\mode, mode);
 	};
-	
+
 	~rewrapKeys = ~requiredKeys ++ [\topNote];
-	
+
 	~clearAdapt = #{ ~topNote.clearAdapt };
 
 		// more modularization
@@ -440,9 +447,9 @@ PR(\basicMacroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 	};
-	
+
 	~patternAvecTop = #{
 		~topNotePattern = ~topNote.asPattern;
 		PbindMultiChan(#[\delta, \length], ~makeProut.value(\macro),
@@ -453,7 +460,7 @@ PR(\basicMacroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev|
+		.collect(inEnvir { |ev|
 			~lastEvent = ev;
 			ev
 		});
@@ -472,7 +479,7 @@ PR(\basicMacroRh).v.clone({
 			Pbindf(out, \argKeys, ~argPairs[0, 2..], * ~argPairs)
 		}, { out })
 	};
-	
+
 		// normally this process should not create resources that need to be freed
 		// (GC takes care of data structures) but just in case...
 	~freeCleanup = {
@@ -492,12 +499,12 @@ PR(\macroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
 	};
-	
+
 	~patternAvecTop = #{
 		~topNotePattern = ~topNote.asPattern;
-		PbindMultiChan(
+		PbindMultiChan /*DebugPbind*/(
 			#[\top, \delta, \length], ~makeProut.value(\topNotePattern,
 				~topNote[\event], ~topNote)
 				.collect({ |ev|	// from topEvent, make an array with delta and length
@@ -509,8 +516,8 @@ PR(\macroRh).v.clone({
 			\updateOnBass, Pfunc({ ~bassUpdate }),
 			\convertTopFunc, Pfunc({ ~convertTopFunc ? \convertMode }),
 			\mode, Pfunc({ ~getMode.value }))
-		.collect(e { |ev| currentEnvironment.put(\lastEvent, ev); ev });
-	};			
+		.collect(inEnvir { |ev| currentEnvironment.put(\lastEvent, ev); ev });
+	};
 }) => PR(\chTop);
 
 AbstractChuckArray.defaultSubType = saveSubType;

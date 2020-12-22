@@ -11,7 +11,7 @@ BPStream : Pattern {
 	*new { |key, resetSource = false, envir|
 		^super.newCopyArgs(key, resetSource, envir)
 	}
-	
+
 	asStream {
 		var	streamKey = (key ++ "Stream").asSymbol;
 		envir ?? { envir = currentEnvironment; };
@@ -28,26 +28,14 @@ BPStream : Pattern {
 			streamKey.envirGet.next(inval)
 		}, { this.reset }).envir_(envir)   // make sure FuncStream knows which environment
 	}
-	
+
 	reset {
 		envir.use { (key ++ "Stream").asSymbol.envirGet.reset }
 	}
-	
+
 	printOn { |stream| stream << "BPStream(" <<< key << ")" }
 		// not including envir here because it could be an infinitely-recursive data structure
 		// (envir contains BPStream, which contains envir etc.)
 	storeArgs { ^[key, resetSource] }
 //	storeOn { |stream| this.printOn(stream) }
-}
-
-// Proutine, but protects against nil being passed in
-// intended for routines that yield events
-// this is a workaround for EventStreamPlayer-stop
-// no longer needed b/c of EventStreamCleanup - deprecating
-Prt : Proutine {
-	var	<>envir;
-	*new { arg routineFunc;
-		"Prt is deprecated. Use Prout instead.".postln
-		^Prout(routineFunc)
-	}
 }
